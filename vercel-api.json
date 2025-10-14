@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api-vercel/[...path].js": {
+      "maxDuration": 10
+    }
+  }
+}
