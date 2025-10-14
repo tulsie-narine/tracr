@@ -3,8 +3,8 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 
 const app = express();
-const PORT = 8080;
-const JWT_SECRET = 'this_is_a_very_secure_jwt_secret_key_for_development_only_32chars';
+const PORT = process.env.PORT || 8080;
+const JWT_SECRET = process.env.JWT_SECRET || 'this_is_a_very_secure_jwt_secret_key_for_development_only_32chars';
 
 app.use(cors());
 app.use(express.json());
