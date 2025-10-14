@@ -21,9 +21,49 @@ import {
 
 const API_URL = config.apiUrl
 
+// Check if API is available
+let apiHealthStatus: 'unknown' | 'healthy' | 'unhealthy' = 'unknown'
+
+export async function checkApiHealth(): Promise<boolean> {
+  // If we know it's placeholder, don't bother checking
+  if (API_URL.includes('placeholder')) {
+    apiHealthStatus = 'unhealthy'
+    return false
+  }
+
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+    
+    const response = await fetch(`${API_URL}/health`, {
+      method: 'GET',
+      signal: controller.signal,
+    })
+    
+    clearTimeout(timeoutId)
+    const isHealthy = response.ok
+    apiHealthStatus = isHealthy ? 'healthy' : 'unhealthy'
+    return isHealthy
+  } catch (error) {
+    apiHealthStatus = 'unhealthy'
+    return false
+  }
+}
+
+// Get API health status
+export function getApiHealthStatus(): typeof apiHealthStatus {
+  return apiHealthStatus
+}
+
 // Login function - makes API call and stores token
 export async function login(username: string, password: string): Promise<LoginResponse> {
   try {
+    // Check API health first
+    const isApiHealthy = await checkApiHealth()
+    if (!isApiHealthy) {
+      throw new Error('API server is not available. Please check your connection or try again later.')
+    }
+
     const response = await fetch(`${API_URL}/v1/auth/login`, {
       method: 'POST',
       headers: {

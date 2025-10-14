@@ -1,15 +1,25 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
+import { config } from '@/lib/env'
+import ApiSetupGuide from '@/components/api-setup-guide'
 
 export default function HomePage() {
   const { isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
+  const [showSetupGuide, setShowSetupGuide] = useState(false)
 
   useEffect(() => {
     if (!isLoading) {
+      // If API is using placeholder URL, show setup guide
+      if (config.apiUrl.includes('placeholder')) {
+        setShowSetupGuide(true)
+        return
+      }
+
+      // Otherwise proceed with normal routing
       if (isAuthenticated) {
         router.push('/dashboard')
       } else {
@@ -17,6 +27,11 @@ export default function HomePage() {
       }
     }
   }, [isAuthenticated, isLoading, router])
+
+  // Show API setup guide if using placeholder
+  if (showSetupGuide) {
+    return <ApiSetupGuide />
+  }
 
   // Show loading spinner while redirecting
   if (isLoading) {
