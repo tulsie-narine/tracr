@@ -12,12 +12,18 @@ function validateUrl(url: string | undefined, name: string): string {
     throw new Error(`Missing required environment variable: ${name}`)
   }
 
+  // Auto-add https:// if no protocol is specified
+  let fullUrl = url
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    fullUrl = `https://${url}`
+  }
+
   try {
-    const parsedUrl = new URL(url)
+    const parsedUrl = new URL(fullUrl)
     // Remove trailing slash
     return parsedUrl.toString().replace(/\/$/, '')
   } catch {
-    throw new Error(`Invalid URL format for ${name}: ${url}`)
+    throw new Error(`Invalid URL format for ${name}: ${url} (tried: ${fullUrl})`)
   }
 }
 
