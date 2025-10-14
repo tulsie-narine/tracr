@@ -1,0 +1,18 @@
+# Ignore API backend files (deployed separately)
+../api/
+../agent/
+../docs/
+
+# Ignore root level files not needed for web deployment
+../.gitignore
+../README.md
+../package.json
+../mock-api-server.js
+
+# Standard ignores
+node_modules
+.next
+.env.local
+.env*.local
+*.log
+.DS_Store

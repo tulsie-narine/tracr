@@ -119,7 +119,14 @@ Fix any TypeScript errors before proceeding.
 1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
 2. Click "New Project"
 3. Import your Git repository (GitHub, GitLab, or Bitbucket)
-4. **Important**: Set root directory to `web/` (not the repository root)
+4. **🚨 CRITICAL**: Set root directory to `web/` (not the repository root)
+   - This prevents Vercel from trying to deploy the Go API backend
+   - Without this, you'll get: "Could not find an exported function" error
+
+**If you get "Could not find an exported function" error:**
+- Go to Project Settings → General → Root Directory
+- Change from `.` to `web`
+- Click Save and redeploy
 
 ### Step 2: Configure Build Settings
 
