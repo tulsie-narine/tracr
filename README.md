@@ -2,6 +2,14 @@
 
 A comprehensive Windows inventory management system consisting of a Windows service agent for data collection, a backend API for ingestion and commands, and a web UI for visualization and control.
 
+## 🚀 Quick Deploy
+
+**Deploy Mock API Server to Railway:**
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/8kzPYu?referralCode=alphasec)
+
+**Frontend (Vercel):** Already deployed at `tracr-silk.vercel.app`
+
 ## System Architecture
 
 The system follows a three-tier architecture with secure communication between components:
