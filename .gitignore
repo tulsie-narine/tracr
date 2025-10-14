@@ -1,0 +1,103 @@
+# Binaries and build artifacts
+*.exe
+*.msi
+*.dll
+*.so
+*.dylib
+*.test
+agent/agent
+api/api
+web/.next/
+web/out/
+web/dist/
+
+# Go build artifacts
+vendor/
+*.mod.sum
+
+# Node.js dependencies and artifacts
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Configuration and secrets
+config.json
+config.yaml
+.env
+.env.local
+.env.production
+.env.development
+*.pem
+*.key
+*.crt
+*.p12
+
+# Database data directories
+/infra/postgres-data/
+/data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+/agent/logs/
+/api/logs/
+
+# MSI build outputs
+agent/installer/*.wixobj
+agent/installer/*.wixpdb
+agent/installer/*.msi
+
+# Test coverage
+coverage.out
+coverage.html
+*.cover
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Docker volumes
+postgres-data/
+
+# Cypress
+web/cypress/videos/
+web/cypress/screenshots/
+web/cypress/downloads/
+
+# Certificates for development
+infra/certs/
+*.csr
+
+# Backup files
+*.bak
+*.backup
+
+# IDE specific
+.vscode/settings.json
+.idea/workspace.xml

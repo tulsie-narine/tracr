@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" 
+           Name="Tracr Agent" 
+           Language="1033" 
+           Version="!(bind.FileVersion.TracrAgentExe)" 
+           Manufacturer="Tracr Systems" 
+           UpgradeCode="12345678-1234-5678-9012-123456789012">
+    
+    <Package InstallerVersion="200" 
+             Compressed="yes" 
+             InstallScope="perMachine" 
+             Platform="x64" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    
+    <MediaTemplate EmbedCab="yes" />
+
+    <Feature Id="ProductFeature" Title="Tracr Agent" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+
+    <!-- UI Configuration -->
+    <UI>
+      <UIRef Id="WixUI_Minimal" />
+      <Publish Dialog="ExitDialog"
+               Control="Finish" 
+               Event="DoAction" 
+               Value="StartService">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
+    </UI>
+
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+
+    <!-- Custom Actions -->
+    <CustomAction Id="StartService"
+                  Execute="deferred"
+                  Impersonate="no"
+                  ExeCommand="[INSTALLDIR]agent.exe -start"
+                  Directory="INSTALLDIR"
+                  Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="StartService" After="InstallFinalize">NOT Installed</Custom>
+    </InstallExecuteSequence>
+
+  </Product>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLDIR" Name="TracrAgent" />
+      </Directory>
+      <Directory Id="CommonAppDataFolder">
+        <Directory Id="TrackerAppDataDir" Name="TracrAgent">
+          <Directory Id="ConfigDir" Name="config" />
+          <Directory Id="DataDir" Name="data" />
+          <Directory Id="LogsDir" Name="logs" />
+        </Directory>
+      </Directory>
+    </Directory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLDIR">
+      
+      <!-- Main executable -->
+      <Component Id="TracrAgentExecutable" Guid="11111111-2222-3333-4444-555555555555">
+        <File Id="TracrAgentExe" 
+              Source="../build/agent.exe" 
+              KeyPath="yes" 
+              Checksum="yes" />
+        
+        <!-- Windows Service Installation -->
+        <ServiceInstall Id="TracrAgentService"
+                        Name="TracrAgent"
+                        DisplayName="Tracr Agent"
+                        Description="Tracr Agent - Windows system inventory collection service"
+                        Type="ownProcess"
+                        Start="auto"
+                        Account="LocalSystem"
+                        ErrorControl="normal"
+                        Interactive="no">
+        </ServiceInstall>
+        
+        <ServiceControl Id="TracrAgentServiceControl"
+                        Name="TracrAgent"
+                        Start="install"
+                        Stop="both"
+                        Remove="uninstall"
+                        Wait="yes" />
+      </Component>
+
+      <!-- Configuration template -->
+      <Component Id="ConfigTemplate" Guid="22222222-3333-4444-5555-666666666666" Directory="ConfigDir">
+        <File Id="ConfigTemplateJson"
+              Source="config-template.json"
+              Name="config.json"
+              KeyPath="yes" />
+        <CreateFolder />
+      </Component>
+
+      <!-- Data directory -->
+      <Component Id="DataDirectory" Guid="33333333-4444-5555-6666-777777777777" Directory="DataDir">
+        <CreateFolder />
+        <RemoveFolder Id="RemoveDataDir" Directory="DataDir" On="uninstall" />
+      </Component>
+
+      <!-- Logs directory -->
+      <Component Id="LogsDirectory" Guid="44444444-5555-6666-7777-888888888888" Directory="LogsDir">
+        <CreateFolder />
+        <RemoveFolder Id="RemoveLogsDir" Directory="LogsDir" On="uninstall" />
+      </Component>
+
+    </ComponentGroup>
+  </Fragment>
+</Wix>
