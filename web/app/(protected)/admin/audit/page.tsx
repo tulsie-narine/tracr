@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+
+// Prevent static generation for this page
+export const dynamic = 'force-dynamic'
 import { useRouter, useSearchParams } from 'next/navigation'
 import useSWR from 'swr'
 import { 

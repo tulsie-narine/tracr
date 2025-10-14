@@ -1,7 +1,14 @@
 // Centralized environment configuration with validation
 
+// Check if we're in build mode
+const isBuildTime = typeof window === 'undefined' && !process.env.NEXT_PUBLIC_API_URL
+
 function validateUrl(url: string | undefined, name: string): string {
   if (!url) {
+    // During build time (prerendering), provide a placeholder URL
+    if (isBuildTime) {
+      return 'https://api.placeholder.com'
+    }
     throw new Error(`Missing required environment variable: ${name}`)
   }
 
@@ -19,15 +26,18 @@ function validateString(value: string | undefined, name: string, defaultValue?: 
     if (defaultValue !== undefined) {
       return defaultValue
     }
+    if (isBuildTime) {
+      return name.includes('APP_NAME') ? 'Tracr' : '1.0.0'
+    }
     throw new Error(`Missing required environment variable: ${name}`)
   }
   return value
 }
 
 // Validate and export environment variables
-export const API_URL = validateUrl(process.env.NEXT_PUBLIC_API_URL, 'NEXT_PUBLIC_API_URL')
-export const APP_NAME = validateString(process.env.NEXT_PUBLIC_APP_NAME, 'NEXT_PUBLIC_APP_NAME', 'Tracr')
-export const APP_VERSION = validateString(process.env.NEXT_PUBLIC_APP_VERSION, 'NEXT_PUBLIC_APP_VERSION', '1.0.0')
+const API_URL = validateUrl(process.env.NEXT_PUBLIC_API_URL, 'NEXT_PUBLIC_API_URL')
+const APP_NAME = validateString(process.env.NEXT_PUBLIC_APP_NAME, 'NEXT_PUBLIC_APP_NAME', 'Tracr')
+const APP_VERSION = validateString(process.env.NEXT_PUBLIC_APP_VERSION, 'NEXT_PUBLIC_APP_VERSION', '1.0.0')
 
 // Export consolidated configuration object
 export const config = {
@@ -36,9 +46,11 @@ export const config = {
   appVersion: APP_VERSION,
 } as const
 
-// Validate configuration on module load
-if (typeof window === 'undefined') {
-  // Server-side validation
+// Export individual values for backward compatibility
+export { API_URL, APP_NAME, APP_VERSION }
+
+// Log configuration when not in build mode
+if (!isBuildTime) {
   console.log('Environment configuration loaded:', {
     apiUrl: config.apiUrl,
     appName: config.appName,
