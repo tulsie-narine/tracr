@@ -179,6 +179,191 @@ The agent logs to multiple destinations:
 - **WARN**: Non-critical issues
 - **ERROR**: Errors requiring attention
 
+## Production Deployment Configuration
+
+After deploying the Tracr API backend to production, configure agents to communicate with the production API URL. For detailed deployment instructions, see the web frontend [DEPLOYMENT.md](../web/DEPLOYMENT.md).
+
+### Configuration Methods
+
+#### Method 1: Configuration File (Recommended)
+
+**Location**: `C:\ProgramData\TracrAgent\config.json`
+
+Edit the configuration file to point to your production API backend:
+
+```json
+{
+  "api_endpoint": "https://api.tracr.example.com",
+  "collection_interval": "15m",
+  "heartbeat_interval": "5m",
+  "log_level": "INFO",
+  "request_timeout": "30s",
+  "command_poll_interval": "60s"
+}
+```
+
+After editing, restart the Tracr Agent service:
+```powershell
+Restart-Service TracrAgent
+```
+
+#### Method 2: Environment Variable
+
+Set the `TRACR_API_ENDPOINT` environment variable to override the config file:
+
+```powershell
+# Set system-wide environment variable
+[System.Environment]::SetEnvironmentVariable("TRACR_API_ENDPOINT", "https://api.tracr.example.com", "Machine")
+
+# Restart service to apply changes
+Restart-Service TracrAgent
+```
+
+Environment variables take precedence over config file values.
+
+#### Method 3: Installer Configuration
+
+During agent installation, provide the API endpoint as an MSI parameter:
+
+```cmd
+msiexec /i TracrAgent.msi API_ENDPOINT=https://api.tracr.example.com /quiet
+```
+
+This method sets the initial configuration file value during installation.
+
+### Agent Registration Process
+
+When the agent starts with a new API endpoint, it follows this registration process:
+
+1. **Agent Startup**: Agent reads configuration and validates API endpoint
+2. **Registration Request**: Agent calls `POST /v1/agents/register` with:
+   - Hostname (`DESKTOP-ABC123`)
+   - OS Version (`Windows 11 Pro`)
+   - Agent Version (`1.0.0`)
+3. **API Response**: API backend returns:
+   - `device_id` (unique identifier)
+   - `device_token` (authentication token)
+4. **Save Credentials**: Agent saves credentials to config file
+5. **Start Operations**: Agent begins heartbeat and inventory collection
+6. **Web Frontend**: Device appears in dashboard device list
+
+Registration only happens once per device unless credentials are reset.
+
+### Verification Steps
+
+#### Check Agent Status
+```powershell
+# Verify service is running
+Get-Service TracrAgent
+
+# Check recent logs
+Get-Content "C:\ProgramData\TracrAgent\logs\agent.log" -Tail 20
+```
+
+#### Look for Successful Registration
+Check agent logs for registration success:
+```
+INFO Agent starting with config: api_endpoint=https://api.tracr.example.com
+INFO Attempting agent registration...
+INFO Agent registered successfully: device_id=abc123, hostname=DESKTOP-XYZ
+INFO Device token saved to config file
+INFO Starting heartbeat goroutine (interval: 5m)
+INFO Starting command polling goroutine (interval: 60s)
+INFO Starting inventory collection (interval: 15m)
+```
+
+#### Verify in Web Frontend
+1. Login to web dashboard at your deployed URL
+2. Navigate to Devices page
+3. Verify device appears in list with:
+   - Correct hostname
+   - "Online" status (green badge)
+   - Recent "Last Seen" timestamp
+4. Click device to view details:
+   - Snapshots tab shows recent inventory data
+   - Performance tab shows CPU/memory metrics
+   - Software tab shows installed applications
+
+### Troubleshooting Production Issues
+
+#### Agent Not Registering
+**Symptoms**: Device doesn't appear in web frontend device list
+
+**Solutions**:
+- Verify `api_endpoint` URL is correct and accessible: `curl https://api.tracr.example.com/health`
+- Check Windows Firewall allows outbound HTTPS traffic (port 443)
+- Verify SSL certificate is valid (agents validate certificates)
+- Check agent logs for detailed error messages
+- Test network connectivity: `Test-NetConnection api.tracr.example.com -Port 443`
+
+#### Agent Registered But Not Sending Data
+**Symptoms**: Device appears offline or no recent snapshots
+
+**Solutions**:
+- Verify `device_token` is saved in config file
+- Check agent logs for authentication errors
+- Verify API backend is accepting requests
+- Test API connectivity with saved token
+- Check system clock is synchronized (JWT tokens are time-sensitive)
+
+#### Device Shows as "Offline" in Web Frontend
+**Symptoms**: Device status shows red "Offline" badge
+
+**Solutions**:
+- Agent hasn't sent heartbeat in last 5 minutes
+- Check agent service is running: `Get-Service TracrAgent`
+- Check agent logs for recent errors
+- Verify network connectivity between agent and API backend
+- Check system resources (CPU, memory, disk space)
+
+### Mass Deployment Strategies
+
+#### Group Policy (Domain Environment)
+```powershell
+# Create GPO to deploy MSI with parameters
+msiexec /i "\\domain\share\TracrAgent.msi" API_ENDPOINT=https://api.tracr.example.com /quiet
+```
+
+#### Microsoft Intune (MDM)
+- Upload MSI to Intune console
+- Configure installation parameters
+- Deploy to device groups
+- Monitor deployment status
+
+#### PowerShell DSC (Desired State Configuration)
+```powershell
+Configuration TracrAgentInstall {
+    Node $AllNodes.NodeName {
+        Package TracrAgent {
+            Ensure = "Present"
+            Name = "Tracr Agent"
+            Path = "\\share\TracrAgent.msi"
+            Arguments = "API_ENDPOINT=https://api.tracr.example.com /quiet"
+            ProductId = "{GUID}"
+        }
+    }
+}
+```
+
+#### SCCM/ConfigMgr
+- Create application package
+- Set installation command with API_ENDPOINT parameter
+- Deploy to device collections
+- Monitor compliance
+
+### Best Practices for Production
+
+1. **Staged Rollout**: Deploy to pilot group before organization-wide
+2. **Monitor Registration**: Watch API logs for registration rate
+3. **Network Capacity**: Ensure API backend can handle agent load
+4. **SSL Certificates**: Use valid certificates (agents reject self-signed)
+5. **Time Synchronization**: Ensure accurate system clocks for JWT validation
+6. **Firewall Rules**: Allow outbound HTTPS (port 443) to API backend
+7. **Service Accounts**: Run agent service with minimal required privileges
+8. **Update Strategy**: Plan for agent updates and configuration changes
+
+See [web frontend DEPLOYMENT.md](../web/DEPLOYMENT.md) for comprehensive production deployment documentation.
+
 ## Development Setup
 
 ### Local Development

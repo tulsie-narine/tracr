@@ -7,13 +7,13 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 
-	"github.com/tracr/api/internal/database"
 	"github.com/tracr/api/internal/models"
 )
 
 // DeviceAuth middleware validates device tokens for agent endpoints
-func DeviceAuth() fiber.Handler {
+func DeviceAuth(db *sqlx.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Extract Authorization header
 		authHeader := c.Get("Authorization")
@@ -60,7 +60,7 @@ func DeviceAuth() fiber.Handler {
 		// Query device and validate token
 		var device models.Device
 		query := "SELECT * FROM devices WHERE id = $1 AND device_token_hash = $2"
-		err = database.DB.Get(&device, query, deviceID, tokenHash)
+		err = db.Get(&device, query, deviceID, tokenHash)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Invalid device ID or token",

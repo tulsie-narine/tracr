@@ -36,6 +36,7 @@ type SnapshotSummary struct {
 	CPUPercent  *float64  `json:"cpu_percent" db:"cpu_percent"`
 	MemoryUsedBytes *int64 `json:"memory_used_bytes" db:"memory_used_bytes"`
 	MemoryTotalBytes *int64 `json:"memory_total_bytes" db:"memory_total_bytes"`
+	BootTime    *time.Time `json:"boot_time" db:"boot_time"`
 }
 
 // InventorySubmission represents the complete payload submitted by agents

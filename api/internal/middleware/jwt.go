@@ -34,7 +34,7 @@ func JWTAuth(cfg *config.Config) fiber.Handler {
 		}
 
 		// Parse and validate token
-		token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.ParseWithClaims(tokenString, &JWTClaimsCustom{}, func(token *jwt.Token) (interface{}, error) {
 			// Validate signing method
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fiber.NewError(fiber.StatusUnauthorized, "Invalid signing method")
@@ -49,7 +49,7 @@ func JWTAuth(cfg *config.Config) fiber.Handler {
 		}
 
 		// Extract claims
-		claims, ok := token.Claims.(*jwt.RegisteredClaims)
+		claims, ok := token.Claims.(*JWTClaimsCustom)
 		if !ok {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Invalid token claims",

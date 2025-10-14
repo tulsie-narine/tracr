@@ -4,11 +4,32 @@ A comprehensive Windows inventory management system consisting of a Windows serv
 
 ## System Architecture
 
-The system follows a three-tier architecture:
+The system follows a three-tier architecture with secure communication between components:
 
+```
+[Windows Devices]           [Users/Admins]
+      |                           |
+ [Tracr Agent]              [Web Browser]
+      |                           |
+      |                           |
+      +---------> [API Backend] <-----------+
+                      |
+                [PostgreSQL Database]
+                      |
+               [Web Frontend]
+              (Vercel/Hosting)
+```
+
+**Communication Flow:**
+- **Agent → API Backend**: Device registration, inventory submission, heartbeat, command polling (HTTPS)
+- **Web Frontend → API Backend**: User authentication, device management, admin operations (HTTPS)
+- **Users → Web Frontend**: Browser access to dashboard and admin interfaces (HTTPS)
+
+**Components:**
 - **Agent**: Go-based Windows service that collects system inventory using WMI and Windows Registry
-- **API**: Go backend with Fiber framework and PostgreSQL for data ingestion, authentication, and command management
-- **Web**: Next.js React frontend for device visualization and administrative controls
+- **API Backend**: Go backend with Fiber framework and PostgreSQL for data ingestion, authentication, and command management
+- **Web Frontend**: Next.js React application for device visualization and administrative controls
+- **Database**: PostgreSQL for storing device data, users, snapshots, and audit logs
 
 ## Components Overview
 
@@ -76,29 +97,100 @@ The system follows a three-tier architecture:
 - PostgreSQL 13+ database
 - TLS certificate for HTTPS communication
 
-## Deployment Overview
+## Deployment
 
-1. **Database Setup**: Deploy PostgreSQL and run initial migrations
-2. **API Deployment**: Deploy API service with proper configuration
-3. **Web UI Deployment**: Build and deploy Next.js application
-4. **Agent Distribution**: Create and distribute MSI packages to endpoints
+### Production Deployment Overview
 
-## Security Considerations
+1. **API Backend**: Deploy to server with PostgreSQL database
+2. **Web Frontend**: Deploy to Vercel (or Node.js hosting)
+3. **Agent Configuration**: Configure agents to point to production API URL
+4. **Agent Installation**: Install agents on Windows devices
+5. **Verification**: Access web frontend and verify devices appear
 
-- All communication encrypted with TLS 1.2+
-- Device-specific authentication tokens
-- JWT-based web authentication with role-based access
-- Audit logging for administrative actions
-- Token rotation capabilities
-- No inbound firewall rules required (poll-based architecture)
+### Prerequisites for Production
+
+**For Deployment:**
+- Vercel account (or Node.js hosting platform)
+- Server for API backend (Linux/Windows with 2+ CPU cores, 4GB+ RAM)
+- PostgreSQL database (version 12+)
+- Domain names and SSL certificates
+- Windows devices for agent installation
+
+**For Development:**
+- Node.js 20+ for web frontend development
+- Go 1.21+ for API backend and agent development
+- PostgreSQL 12+ for local database
+- Git for version control
+
+### Environment Variables Overview
+
+**Web Frontend:**
+- `NEXT_PUBLIC_API_URL` - URL of the deployed API backend
+- `NEXT_PUBLIC_APP_NAME` - Application name (optional)
+- `NEXT_PUBLIC_APP_VERSION` - Application version (optional)
+
+**API Backend:**
+- `DATABASE_URL` - PostgreSQL connection string
+- `JWT_SECRET` - Strong random secret (minimum 32 characters)
+- `PORT` - Server port (default: 8443)
+- `TLS_CERT_FILE`, `TLS_KEY_FILE` - SSL certificate paths
+
+**Agent:**
+- `TRACR_API_ENDPOINT` - Production API URL
+- `TRACR_DEVICE_TOKEN` - Device authentication token (auto-generated)
+- `TRACR_LOG_LEVEL` - Logging verbosity
+
+### Quick Start for Production
+
+1. **Deploy API Backend** with PostgreSQL database (see `api/README.md`)
+2. **Deploy Web Frontend** to Vercel (see `web/DEPLOYMENT.md` for detailed instructions)
+3. **Configure Agents** to point to production API URL (see `agent/README.md`)
+4. **Install Agents** on Windows devices using MSI installer
+5. **Verify Deployment** by accessing web frontend and checking device list
+
+## Security Features
+
+**Communication Security:**
+- All communication encrypted with HTTPS/TLS 1.2+
+- Device-specific authentication tokens for agent communication
+- JWT-based authentication for web users with role-based access control
+- No inbound firewall rules required (agents use outbound HTTPS polling)
+
+**Authentication & Authorization:**
+- **Agent Authentication**: Device tokens (SHA-256 hashed in database)
+- **User Authentication**: JWT tokens with expiration and refresh
+- **Role-Based Access Control**: Viewer and Admin roles with granular permissions
+- **Token Rotation**: Configurable token rotation policy (30 days default)
+
+**Data Protection:**
+- Password hashing with bcrypt for user accounts
+- Parameterized queries to prevent SQL injection
+- Input validation and sanitization
+- Audit logging for administrative actions and compliance
+
+**Production Security Best Practices:**
+- Use strong JWT secrets (minimum 32 characters, random)
+- Enable rate limiting to prevent abuse
+- Regular dependency updates for security patches
+- Valid SSL certificates (agents reject self-signed certificates)
+- Minimal service account privileges for agent service
 
 ## Documentation
 
-- [Architecture Documentation](./docs/architecture.md)
-- [Deployment Guide](./docs/deployment.md)
-- [Security Documentation](./docs/security.md)
-- [API Examples](./docs/api-examples.md)
-- [Troubleshooting Guide](./docs/runbooks/troubleshooting.md)
+### Component-Specific Documentation
+- **Web Frontend**: [web/README.md](./web/README.md) and [web/DEPLOYMENT.md](./web/DEPLOYMENT.md)
+- **API Backend**: [api/README.md](./api/README.md)
+- **Agent**: [agent/README.md](./agent/README.md)
+
+### Deployment & Operations
+- **Production Deployment**: [web/DEPLOYMENT.md](./web/DEPLOYMENT.md) - Comprehensive deployment guide
+- **Agent Configuration**: [agent/README.md](./agent/README.md) - Production agent setup
+- **Database Schema**: [api/internal/database/migrations/](./api/internal/database/migrations/) - Database structure
+
+### Development
+- **Architecture**: Component interaction and data flow
+- **API Reference**: RESTful endpoints and authentication
+- **Contributing**: Development guidelines and contribution process
 
 ## Development
 
