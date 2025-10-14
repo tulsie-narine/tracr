@@ -137,6 +137,12 @@ Vercel auto-detects Next.js projects, but verify these settings:
 - **Install Command**: `npm install`
 - **Node.js Version**: 20.x (recommended for Next.js 15+)
 
+**Note on Vercel Plans:**
+- **Hobby Plan (Free)**: 10-second function timeout, sufficient for this app
+- **Pro Plan**: Up to 300-second function timeout
+- Our Next.js app uses static generation and doesn't require long-running functions
+- If you see "maxDuration must be between 1 second and 300 seconds" error, it's been resolved in the latest vercel.json
+
 ### Step 3: Configure Environment Variables
 
 Add the following environment variables in Vercel dashboard:
