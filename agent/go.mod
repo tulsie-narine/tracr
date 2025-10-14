@@ -8,6 +8,4 @@ require (
 	golang.org/x/sys v0.15.0
 )
 
-require (
-	github.com/go-ole/go-ole v1.2.6 // indirect
-)
+require github.com/go-ole/go-ole v1.2.6 // indirect

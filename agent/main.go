@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/tracr/agent/cmd"
 	"github.com/tracr/agent/internal/logger"

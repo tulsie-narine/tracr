@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/tracr/agent/internal/config"
 	"github.com/tracr/agent/internal/logger"
 	"github.com/tracr/agent/internal/scheduler"
 	"golang.org/x/sys/windows/svc"
-	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/mgr"
 )
 
@@ -32,14 +30,14 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	cfg, err := config.Load()
 	if err != nil {
 		logger.Error("Failed to load configuration", "error", err)
-		changes <- svc.Status{State: svc.Stopped, ExitCode: 1}
+		changes <- svc.Status{State: svc.Stopped, Win32ExitCode: 1}
 		return
 	}
 
 	s.scheduler = scheduler.New(cfg)
 	if err := s.scheduler.Start(s.ctx); err != nil {
 		logger.Error("Failed to start scheduler", "error", err)
-		changes <- svc.Status{State: svc.Stopped, ExitCode: 1}
+		changes <- svc.Status{State: svc.Stopped, Win32ExitCode: 1}
 		return
 	}
 
@@ -148,7 +146,7 @@ func UninstallService(name string) error {
 	// Stop the service if it's running
 	status, err := s.Query()
 	if err == nil && status.State == svc.Running {
-		if err := s.Control(svc.Stop); err != nil {
+		if _, err := s.Control(svc.Stop); err != nil {
 			log.Printf("Warning: failed to stop service before uninstall: %v", err)
 		}
 		// Wait for service to stop

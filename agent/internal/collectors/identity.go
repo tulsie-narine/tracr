@@ -2,7 +2,6 @@ package collectors
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/StackExchange/wmi"

@@ -2,7 +2,6 @@ package logger
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -173,17 +172,14 @@ func logMessage(level Level, msg string, args ...interface{}) {
 
 	// Log critical events to Windows Event Log
 	if eventLogger != nil && level >= WARN {
-		var eventType uint16
 		switch level {
 		case WARN:
-			eventType = eventlog.Warning
+			eventLogger.Warning(2, formattedMsg)
 		case ERROR:
-			eventType = eventlog.Error
+			eventLogger.Error(3, formattedMsg)
 		default:
-			eventType = eventlog.Info
+			eventLogger.Info(1, formattedMsg)
 		}
-		
-		eventLogger.Report(eventType, 0, formattedMsg)
 	}
 
 	// Also log to console in debug mode
