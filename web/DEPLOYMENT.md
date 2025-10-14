@@ -145,19 +145,30 @@ Vercel auto-detects Next.js projects, but verify these settings:
 
 ### Step 3: Configure Environment Variables
 
-Add the following environment variables in Vercel dashboard:
+**CRITICAL:** The app requires the API backend URL to function properly.
 
-| Variable | Value | Example |
-|----------|-------|---------|
-| `NEXT_PUBLIC_API_URL` | Your API backend URL | `https://api.tracr.example.com` |
-| `NEXT_PUBLIC_APP_NAME` | Application name | `Tracr` |
-| `NEXT_PUBLIC_APP_VERSION` | Current version | `1.0.0` |
+1. **Go to Vercel Dashboard**: Project Settings → Environment Variables
+2. **Add these variables**:
 
-**Important:**
-- Set variables for all environments: Production, Preview, Development
-- Preview deployments can use staging API URL if available
+| Variable | Value | Example | Required |
+|----------|-------|---------|----------|
+| `NEXT_PUBLIC_API_URL` | Your API backend URL | `https://api.tracr.example.com` | **YES** |
+| `NEXT_PUBLIC_APP_NAME` | Application name | `Tracr` | No (defaults to "Tracr") |
+| `NEXT_PUBLIC_APP_VERSION` | Current version | `1.0.0` | No (defaults to "1.0.0") |
+
+3. **Set for all environments**: Production, Preview, Development
+4. **Click "Save"** for each variable
+
+**⚠️ Without `NEXT_PUBLIC_API_URL`:**
+- App will show "Application error: a client-side exception has occurred"
+- Users cannot log in or access data
+- App will display a setup guide to help configure the backend
+
+**Important Notes:**
 - Variables are embedded in the client bundle at build time
-- Never store secrets in `NEXT_PUBLIC_` variables
+- Preview deployments can use staging API URL if available  
+- Never store secrets in `NEXT_PUBLIC_` variables (they're public)
+- API URL should NOT have a trailing slash
 
 ### Step 4: Deploy
 
@@ -279,6 +290,35 @@ INFO Starting command polling goroutine
 - Last seen timestamp is recent
 
 ### Troubleshooting
+
+**Application error: a client-side exception has occurred:**
+This error typically indicates the web frontend cannot connect to the API backend.
+
+1. **Check Environment Variables**: Go to Vercel Dashboard → Project → Settings → Environment Variables
+   - Ensure `NEXT_PUBLIC_API_URL` is set correctly (e.g., `https://api.tracr.example.com`)
+   - The URL should NOT have a trailing slash
+   - Make sure it's set for Production, Preview, and Development environments
+
+2. **Verify API Backend Availability**: Test your API endpoint
+   ```bash
+   curl -I https://your-api-domain.com/health
+   # Should return: HTTP/2 200
+   ```
+
+3. **Check Browser Console**: Open browser dev tools and look for specific error messages:
+   - Network errors → API server not responding
+   - CORS errors → API backend CORS configuration issue
+   - 404 errors → Wrong API URL or path
+
+4. **Redeploy After Changes**: After updating environment variables:
+   - Go to Vercel Dashboard → Project → Deployments
+   - Click "..." → "Redeploy" on latest deployment
+   - Or push a new commit to trigger deployment
+
+5. **Use Demo Mode**: If API is not ready yet, the app will show a setup guide:
+   - The app gracefully handles missing API configuration
+   - Follow the on-screen setup instructions
+   - Configure `NEXT_PUBLIC_API_URL` when backend is ready
 
 **Agent not registering:**
 - Verify `api_endpoint` URL is correct and accessible
