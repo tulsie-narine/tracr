@@ -38,9 +38,9 @@ go mod download
 go mod tidy
 ```
 
-### 3. Build Agent Executable
+### 3. Build Unified Agent Executable
 ```bash
-# Build for Windows (from any platform)
+# Build unified agent for Windows (from any platform)
 make build
 
 # Manual build (Windows target)
@@ -49,6 +49,11 @@ GOOS=windows GOARCH=amd64 go build -ldflags "-w -s" -o build/agent.exe .
 # Verify build output
 ls -la build/
 # Should show agent.exe (~10-20MB)
+# Single binary supports all execution modes:
+# - Service mode (when installed as Windows service)
+# - Tray mode (when run with -tray flag)
+# - Console mode (when run without flags, shows tray by default)
+# - System tray icon is embedded in the binary (no external files needed)
 ```
 
 ### 4. Build Version Information
@@ -87,15 +92,26 @@ build.bat
 
 #### Step 1: Transfer Files
 ```powershell
-# Copy files to Windows VM (via RDP, network share, etc.)
+# Copy unified agent to Windows VM (via RDP, network share, etc.)
 Copy-Item build/agent.exe -Destination "C:\Temp\"
 Copy-Item deploy-to-railway.ps1 -Destination "C:\Temp\"
 Copy-Item verify-railway-connection.ps1 -Destination "C:\Temp\"
 ```
 
-#### Step 2: Install Agent Service
+#### Step 2: Test with System Tray First
 ```powershell
-# On Windows VM, run as Administrator
+# Test with visual feedback before installing as service
+cd C:\Temp
+.\agent.exe -tray
+# Look for Tracr icon in system tray (bottom-right corner)
+# Verify status shows "✓ Registered" within 30 seconds
+# Use "Force Check-In" to send data immediately
+# Quit from tray menu when testing is complete
+```
+
+#### Step 3: Install Agent Service
+```powershell
+# After successful testing, install as service (as Administrator)
 cd C:\Temp
 .\agent.exe -install
 ```

@@ -221,16 +221,13 @@ func (s *Scheduler) ensureRegistered() error {
 	return nil
 }
 
-// ForceRegistration clears existing credentials and forces re-registration
-func (s *Scheduler) ForceRegistration() error {
-	logger.Info("Force registration requested")
+// ForceCheckIn triggers immediate data collection without changing device credentials
+func (s *Scheduler) ForceCheckIn() error {
+	s.logger.Info("Force check-in requested from system tray")
 	
-	// Clear existing credentials
-	s.config.DeviceID = ""
-	s.config.DeviceToken = ""
-
-	// Call registration
-	return s.ensureRegistered()
+	// Trigger immediate collection cycle
+	s.TriggerCollection()
+	return nil
 }
 
 // GetRegistrationStatus returns the current device registration status

@@ -104,7 +104,15 @@ Use the automated deployment script:
    - PowerShell as Administrator
    - Scripts available in agent directory
 
-2. **Deploy Configuration**:
+2. **Test with System Tray First**:
+   ```powershell
+   # Test before service installation
+   cd C:\path\to\tracr\agent
+   .\agent.exe -tray
+   # Verify registration and data collection
+   ```
+
+3. **Deploy Configuration**:
    ```powershell
    # Navigate to agent directory
    cd C:\path\to\tracr\agent
@@ -173,8 +181,8 @@ Use system tray mode to test configuration before installing as service:
    # Navigate to extracted directory
    cd C:\Temp\TracrAgent
    
-   # Run tray version (no admin required for testing)
-   agent-tray.exe -tray
+   # Run unified agent in tray mode (no admin required for testing)
+   agent.exe -tray
    
    # Or use batch script
    run-with-tray.bat
@@ -195,6 +203,7 @@ Use system tray mode to test configuration before installing as service:
 
 5. **Troubleshoot if Needed**:
    - If not registered, click "Force Check-In"
+   - Note: "Force Check-In" sends fresh data without changing device ID
    - Use "Open Logs" to view error messages
    - Use "Open Config" to verify API endpoint
    - Fix issues before installing as service
@@ -236,14 +245,25 @@ Copy-Item deploy-to-railway.ps1 -Destination "\\VM-NAME\C$\Temp\"
 Copy-Item verify-railway-connection.ps1 -Destination "\\VM-NAME\C$\Temp\"
 ```
 
-**Step 3: Install Agent Service**
+**Step 3: Test with System Tray**
 ```powershell
-# On Windows VM, run as Administrator
+# Test with visual feedback first
+cd C:\Temp
+.\agent.exe -tray
+# Look for Tracr icon in system tray
+# Verify status shows "✓ Registered" within 30 seconds
+# Use "Force Check-In" to send data immediately
+# Quit from tray menu when testing complete
+```
+
+**Step 4: Install Agent Service**
+```powershell
+# After successful testing, install as service (as Administrator)
 cd C:\Temp
 .\agent.exe -install
 ```
 
-**Step 4: Configure for Railway**
+**Step 5: Configure for Railway**
 ```powershell
 # Run deployment script
 .\deploy-to-railway.ps1
@@ -285,10 +305,13 @@ Use this checklist to ensure complete deployment:
 - [ ] No CORS errors in browser console
 
 ### Agent Verification (Per VM)
+- [ ] Tested with `agent.exe -tray` first
 - [ ] Agent executable installed: `C:\Program Files\TracrAgent\agent.exe`
 - [ ] Agent service running: `Get-Service TracrAgent`
 - [ ] Config file has Railway URL: `C:\ProgramData\TracrAgent\config.json`
 - [ ] Agent config file contains device_id and device_token
+- [ ] Device ID remains stable across force check-ins
+- [ ] No duplicate devices appearing in dashboard
 - [ ] Agent logs show "Registration successful" message
 - [ ] Agent logs show "Inventory sent successfully" messages
 - [ ] No connection errors in agent logs
@@ -366,6 +389,12 @@ Use this checklist to ensure complete deployment:
   - Verify Railway API is accessible from agent machine
   - Test connectivity: `curl https://web-production-c4a4.up.railway.app`
   - Restart agent service to retry registration
+
+**Problem**: Multiple devices appearing for same machine
+- **Old Cause**: Force check-in created new devices (now fixed)
+- **Current Cause**: Config file was deleted or hostname changed
+- **Solution**: Delete duplicate devices from web dashboard, keep most recent
+- **Prevention**: Don't delete config file unless intentionally re-registering
 
 **Problem**: Registration endpoint not responding
 - **Cause**: Railway API backend not running or network issue

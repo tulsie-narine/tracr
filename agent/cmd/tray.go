@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	_ "embed"
 	"fmt"
 	"os/exec"
 	"time"
@@ -11,8 +12,7 @@ import (
 	"github.com/tracr/agent/internal/logger"
 )
 
-// Icon data will be embedded if icon.ico exists
-// If file doesn't exist, iconData will be empty and default icon will be used
+//go:embed assets/t-icon.ico
 var iconData []byte
 
 // Global variables for system tray
@@ -52,7 +52,7 @@ func onReady() {
 
 	systray.AddSeparator()
 
-	forceCheckInItem = systray.AddMenuItem("Force Check-In", "Trigger immediate registration and data collection")
+	forceCheckInItem = systray.AddMenuItem("Force Check-In", "Trigger immediate data collection and send to server")
 
 	systray.AddSeparator()
 
@@ -138,23 +138,14 @@ func handleForceCheckIn() {
 	forceCheckInItem.SetTitle("Checking in...")
 	forceCheckInItem.Disable()
 	
-	// Perform force registration
-	err := globalScheduler.ForceRegistration()
+	// Perform force check-in (preserves device credentials)
+	globalScheduler.ForceCheckIn()
 	
 	// Re-enable menu item
 	forceCheckInItem.SetTitle("Force Check-In")
 	forceCheckInItem.Enable()
-	
-	if err != nil {
-		logger.Error("Force registration failed", "error", err)
-		// TODO: Show error notification using github.com/gen2brain/beeep
-		return
-	}
 
-	logger.Info("Force registration successful")
-	
-	// Trigger immediate data collection
-	globalScheduler.TriggerCollection()
+	logger.Info("Force check-in completed successfully")
 	
 	// TODO: Show success notification using github.com/gen2brain/beeep
 }

@@ -90,10 +90,25 @@ func main() {
 		fmt.Println("Look for Tracr icon in system tray (bottom-right corner)")
 		cmd.RunWithTray(s)
 	default:
-		// Run in console mode for development/testing
-		fmt.Println("Running in console mode. Use -install to install as service.")
-		if err := cmd.RunConsole(); err != nil {
-			log.Fatalf("Console mode failed: %v", err)
+		// Run with tray by default for better user experience
+		fmt.Println("Starting Tracr Agent with system tray...")
+		fmt.Println("Look for Tracr icon in system tray (bottom-right corner)")
+		fmt.Println("Use -install to install as Windows service")
+		
+		cfg, err := config.Load()
+		if err != nil {
+			log.Fatalf("Failed to load configuration: %v", err)
 		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		s := scheduler.New(cfg)
+		if err := s.Start(ctx); err != nil {
+			log.Fatalf("Failed to start scheduler: %v", err)
+		}
+		defer s.Stop()
+
+		cmd.RunWithTray(s)
 	}
 }

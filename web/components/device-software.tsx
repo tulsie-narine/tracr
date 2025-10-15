@@ -30,8 +30,7 @@ import {
   HardDrive
 } from 'lucide-react'
 import { fetchDeviceDetail, fetchSnapshotDetail } from '@/lib/api-client'
-import { formatDistanceToNow, format } from 'date-fns'
-import { formatBytes } from '@/lib/utils'
+import { formatBytes, safeFormatDistanceToNow, safeFormatDate } from '@/lib/utils'
 import { Software } from '@/types'
 
 interface DeviceSoftwareProps {
@@ -310,10 +309,10 @@ export default function DeviceSoftware({ deviceId }: DeviceSoftwareProps) {
                       {item.install_date ? (
                         <div className="flex flex-col">
                           <span className="text-sm">
-                            {formatDistanceToNow(new Date(item.install_date), { addSuffix: true })}
+                            {safeFormatDistanceToNow(item.install_date, { addSuffix: true })}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(item.install_date), 'PPP')}
+                            {safeFormatDate(item.install_date, 'PPP')}
                           </span>
                         </div>
                       ) : (

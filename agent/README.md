@@ -115,7 +115,7 @@ agent.exe -version
 
 ## Running Modes
 
-The Tracr Agent supports three different running modes:
+The Tracr Agent uses a unified `agent.exe` binary that supports different execution modes:
 
 ### 1. Windows Service Mode (Production)
 
@@ -146,10 +146,7 @@ agent.exe -start
 - **Logs:** File logging + visual status updates
 
 ```cmd
-# Run with tray icon (requires agent-tray.exe)
-agent-tray.exe -tray
-
-# Or use service version with tray flag
+# Run with tray icon (unified binary)
 agent.exe -tray
 ```
 
@@ -157,26 +154,26 @@ agent.exe -tray
 - **Status Display:** Shows registration status (✓ Registered / ✗ Not Registered)
 - **Device ID:** Shows first 8 characters of device identifier
 - **Last Check-in:** Shows time since last successful API communication
-- **Force Check-In:** Button to trigger immediate registration and data collection
+- **Force Check-In:** Triggers immediate data collection and sends fresh snapshot to server
 - **Open Logs:** Quick access to log directory in Explorer
 - **Open Config:** Opens configuration file in Notepad
 - **Quit:** Stops agent and exits
 
-### 3. Console Mode (Development)
+### 3. Interactive Mode (Default)
 
-**Use for:** Development, debugging, detailed log output
+**Use for:** Development, debugging, visual feedback by default
 
 - **Runs as:** Current user
 - **Starts:** Manually from command prompt
-- **User interaction:** Command line interface
+- **User interaction:** System tray icon (shown automatically)
 - **Installation:** Not required
-- **Logs:** Console output + file logging
+- **Logs:** File logging + visual status updates
 
 ```cmd
-# Run in console mode (shows detailed logs)
+# Run with tray by default (better UX)
 agent.exe
 
-# Console output shows real-time log messages
+# Shows system tray automatically for visual feedback
 ```
 
 **When to Use Each Mode:**
@@ -380,6 +377,18 @@ To verify successful registration:
    - Device should appear in Devices page
    - Status should show "Online" within 5 minutes
 
+### Device ID Persistence
+
+**Device ID is assigned once during initial registration:**
+- The same device ID is used for all subsequent communications
+- Force Check-In preserves the device ID and only sends fresh data
+- To get a new device ID, delete the config file and restart the agent
+
+**Force Check-In Behavior:**
+- Triggers immediate data collection and sends current system state to server
+- Does NOT re-register the device or change the device ID
+- Preserves existing device credentials for stable identification
+
 ### Manual Re-registration
 
 To force the agent to register as a new device:
@@ -430,11 +439,11 @@ The system tray provides a user-friendly interface for monitoring and controllin
 #### Running with System Tray
 
 ```cmd
-# Using tray-specific build (recommended)
-agent-tray.exe -tray
-
-# Using service build with tray flag  
+# Using unified binary (recommended)
 agent.exe -tray
+
+# Or run without flags (shows tray by default)
+agent.exe
 
 # Using deployment script
 run-with-tray.bat
@@ -448,7 +457,7 @@ run-with-tray.bat
 - **Last Check-in**: Shows time since last successful API communication (e.g., "2 minutes ago")
 
 **Interactive Controls:**
-- **Force Check-In**: Clears credentials and triggers immediate re-registration and data collection
+- **Force Check-In**: Triggers immediate data collection and sends fresh snapshot to server (preserves existing device ID - does not create a new device)
 - **Open Logs**: Opens log directory (`C:\ProgramData\TracrAgent\logs`) in Windows Explorer
 - **Open Config**: Opens configuration file in Notepad for editing
 - **Quit**: Stops the agent and exits the tray application
@@ -456,7 +465,7 @@ run-with-tray.bat
 #### Use Cases for System Tray Mode
 
 **Testing Registration:**
-1. Run `agent-tray.exe -tray`
+1. Run `agent.exe -tray`
 2. Wait 30 seconds for registration
 3. Check tray menu shows "✓ Registered"
 4. Verify device appears in web dashboard
@@ -475,10 +484,42 @@ run-with-tray.bat
 
 **Benefits:**
 - **Visual Feedback**: No need to check log files manually
-- **Manual Control**: Force registration without restarting service
+- **Manual Control**: Force data collection without restarting service
 - **Quick Access**: Direct links to logs and configuration
 - **Real-time Updates**: Status refreshes every 5 seconds
 - **No Installation**: Runs without installing as Windows service
+
+#### Troubleshooting: Multiple Devices Appearing
+
+**Symptoms:**
+- Multiple devices appear in dashboard for the same machine
+- Device ID changes after using "Force Check-In" from system tray
+- New device created on each agent restart
+
+**Root Causes:**
+
+1. **Config file being deleted:**
+   - Check if config file exists: `C:\ProgramData\TracrAgent\config.json`
+   - If file is missing, agent will re-register as new device
+   - Solution: Don't delete config file unless intentionally re-registering
+
+2. **Config file not saving properly:**
+   - Check file permissions on `C:\ProgramData\TracrAgent\` directory
+   - Verify service account has write access
+   - Check logs for "Failed to save device credentials" errors
+   - Solution: Fix directory permissions, run as Administrator
+
+3. **Hostname changing:**
+   - Backend creates new device if hostname doesn't match existing device
+   - Check if machine hostname is stable
+   - Solution: Ensure hostname doesn't change, or manually merge devices in dashboard
+
+**Cleanup:**
+- If multiple devices exist for same machine:
+  - Identify the correct device (most recent activity)
+  - Note the device_id from config file
+  - Delete duplicate devices from web dashboard
+  - Keep only the device matching the config file's device_id
 
 ### Configuration Methods
 

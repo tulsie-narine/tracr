@@ -192,13 +192,7 @@ export async function fetchDevices(
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch snapshots: ${response.statusText}`)
-  }
-
-  const snapshotsJson = await response.json()
-  return {
-    data: snapshotsJson.snapshots || [],
-    pagination: snapshotsJson.pagination || { total: 0, page: 1, limit, total_pages: 0 }
+    throw new Error(`Failed to fetch devices: ${response.statusText}`)
   }
 
   const devicesJson = await response.json()
@@ -278,7 +272,11 @@ export async function fetchDeviceSnapshots(
       throw new Error(`Failed to fetch device snapshots: ${response.statusText}`)
     }
 
-    return response.json()
+    const snapshotsJson = await response.json()
+    return {
+      data: snapshotsJson.snapshots || [],
+      pagination: snapshotsJson.pagination || { total: 0, page: 1, limit, total_pages: 0 }
+    }
   } catch (error) {
     console.error('Error fetching device snapshots:', error)
     throw error

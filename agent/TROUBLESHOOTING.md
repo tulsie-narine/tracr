@@ -179,9 +179,53 @@ The agent logs to `C:\ProgramData\TracrAgent\logs\agent.log`. Here's what to loo
 4. Run agent in console mode to see detailed errors:
    ```cmd
    cd "C:\Program Files\TracrAgent"
-   agent.exe
+   agent.exe -tray
    ```
 5. Use nuclear reset installer if all else fails
+
+### Issue 6: Device ID Keeps Changing
+
+**Symptoms:**
+- Multiple devices appear in dashboard for the same machine
+- Device ID changes after using "Force Check-In" from system tray
+- New device created on each agent restart
+
+**Root Causes:**
+
+1. **Config file being deleted:**
+   - Check if config file exists: `C:\ProgramData\TracrAgent\config.json`
+   - If file is missing, agent will re-register as new device
+   - Solution: Don't delete config file unless intentionally re-registering
+
+2. **Config file not saving properly:**
+   - Check file permissions on `C:\ProgramData\TracrAgent\` directory
+   - Verify service account has write access
+   - Check logs for "Failed to save device credentials" errors
+   - Solution: Fix directory permissions, run as Administrator
+
+3. **Hostname changing:**
+   - Backend creates new device if hostname doesn't match existing device
+   - Check if machine hostname is stable
+   - Solution: Ensure hostname doesn't change, or manually merge devices in dashboard
+
+4. **Old agent version (before fix):**
+   - Old versions cleared credentials on force check-in
+   - Solution: Update to latest agent version with fixed `ForceCheckIn()` method
+
+**Verification:**
+- Open config file: `C:\ProgramData\TracrAgent\config.json`
+- Check that `device_id` and `device_token` fields are populated
+- Note the device_id value
+- Use "Force Check-In" from system tray
+- Re-open config file and verify device_id is UNCHANGED
+- Check web dashboard - should see only ONE device for this machine
+
+**Cleanup:**
+- If multiple devices exist for same machine:
+  - Identify the correct device (most recent activity)
+  - Note the device_id from config file
+  - Delete duplicate devices from web dashboard
+  - Keep only the device matching the config file's device_id
 
 ## Manual Testing Procedures
 

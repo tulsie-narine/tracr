@@ -11,14 +11,11 @@ LDFLAGS := -X 'github.com/tracr/agent/pkg/version.Version=$(VERSION)' \
            -X 'github.com/tracr/agent/pkg/version.BuildDate=$(BUILD_DATE)' \
            -X 'github.com/tracr/agent/pkg/version.GitCommit=$(GIT_COMMIT)'
 
-# GUI build flags (hides console window for tray version)
-GUI_LDFLAGS := $(LDFLAGS) -H windowsgui
-
 # Directories
 BUILD_DIR := build
 INSTALLER_DIR := installer
 
-.PHONY: all build build-tray build-all test lint clean install-dev uninstall-dev deps run-tray
+.PHONY: all build test lint clean install-dev uninstall-dev deps
 
 all: build
 
@@ -27,23 +24,9 @@ deps:
 	go mod tidy
 
 build: deps
-	@echo "Building service version for Windows..."
+	@echo "Building unified agent for Windows..."
 	@mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/agent.exe ./
-
-build-tray: deps
-	@echo "Building tray version for Windows..."
-	@mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags "$(GUI_LDFLAGS)" -o $(BUILD_DIR)/agent-tray.exe ./
-
-build-all: build build-tray
-	@echo "Built both service and tray versions:"
-	@ls -lh $(BUILD_DIR)/agent*.exe
-
-run-tray:
-	@echo "Running agent in tray mode for testing..."
-	@echo "Note: This runs on host OS (not cross-compiled)"
-	go run . -tray
 
 test:
 	@echo "Running tests..."
