@@ -121,8 +121,12 @@ The agent uses a JSON configuration file located at:
 ### Default Configuration
 
 ```json
+**Location**: `C:\ProgramData\TracrAgent\config.json`
+
+Example configuration:
+```json
 {
-  "api_endpoint": "https://your-api-server:8443",
+  "api_endpoint": "https://web-production-c4a4.up.railway.app",
   "collection_interval": "15m",
   "jitter_percent": 0.1,
   "max_retries": 5,
@@ -133,6 +137,30 @@ The agent uses a JSON configuration file located at:
   "heartbeat_interval": "5m",
   "command_poll_interval": "60s"
 }
+```
+
+**Railway URL (Current Production)**: `https://web-production-c4a4.up.railway.app`  
+**Generic Example**: `https://api.tracr.example.com`
+
+After editing, restart the Tracr Agent service:
+```powershell
+Restart-Service TracrAgent
+```
+
+#### Method 2: Environment Variable
+
+Set the `TRACR_API_ENDPOINT` environment variable to override the config file:
+
+```powershell
+# Railway API (Current Production)
+[System.Environment]::SetEnvironmentVariable("TRACR_API_ENDPOINT", "https://web-production-c4a4.up.railway.app", "Machine")
+
+# Generic example
+[System.Environment]::SetEnvironmentVariable("TRACR_API_ENDPOINT", "https://api.tracr.example.com", "Machine")
+
+# Restart service to apply changes
+Restart-Service TracrAgent
+```
 ```
 
 ### Configuration Options
@@ -182,6 +210,52 @@ The agent logs to multiple destinations:
 ## Production Deployment Configuration
 
 After deploying the Tracr API backend to production, configure agents to communicate with the production API URL. For detailed deployment instructions, see the web frontend [DEPLOYMENT.md](../web/DEPLOYMENT.md).
+
+## Railway Deployment (Current Production Setup)
+
+The production API is deployed on Railway at: `https://web-production-c4a4.up.railway.app`
+
+### Quick Railway Configuration
+
+Use the PowerShell deployment script for automated configuration:
+
+```powershell
+# Run from agent directory (as Administrator)
+.\deploy-to-railway.ps1
+
+# Verify connectivity
+.\verify-railway-connection.ps1
+```
+
+**What the script does:**
+- Updates config file with Railway API URL (current production URL)
+- Preserves existing configuration settings
+- Restarts agent service to apply changes
+- Provides verification steps
+
+### Manual Railway Configuration
+
+Create/edit config file: `C:\ProgramData\TracrAgent\config.json`
+
+```json
+{
+  "api_endpoint": "https://web-production-c4a4.up.railway.app",
+  "collection_interval": "15m",
+  "log_level": "INFO",
+  "heartbeat_interval": "5m"
+}
+```
+
+Then restart the service: `Restart-Service TracrAgent`
+
+### Railway Verification Steps
+
+1. **Test connectivity**: Run `verify-railway-connection.ps1`
+2. **Check agent logs**: Look for registration success messages
+3. **Verify in web frontend**: Check device appears at https://tracr-silk.vercel.app
+4. **Login credentials**: `admin` / `admin123`
+
+**Complete Railway Guide**: [RAILWAY_DEPLOYMENT.md](../RAILWAY_DEPLOYMENT.md)
 
 ### Configuration Methods
 

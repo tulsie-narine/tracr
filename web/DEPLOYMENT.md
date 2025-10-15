@@ -25,6 +25,17 @@ Tracr consists of three main components in production:
 - **Web Frontend**: Dashboard for viewing devices, managing users, and administering the system
 - **Database**: PostgreSQL database storing device data, users, and audit logs
 
+## Current Deployment Setup
+
+**Note**: This project is currently deployed with:
+- **API Backend**: Railway (`https://web-production-c4a4.up.railway.app`)
+- **Web Frontend**: Vercel (`https://tracr-silk.vercel.app`)
+- **Database**: Railway PostgreSQL
+
+For Railway-specific deployment instructions, see [RAILWAY_DEPLOYMENT.md](../RAILWAY_DEPLOYMENT.md)
+
+This guide provides general deployment instructions; Railway guide provides exact steps for current setup.
+
 ## Prerequisites
 
 Before deploying, ensure you have:
@@ -153,8 +164,11 @@ Vercel auto-detects Next.js projects, but verify these settings:
 | Variable | Value | Example | Required |
 |----------|-------|---------|----------|
 | `NEXT_PUBLIC_API_URL` | Your API backend URL | `https://api.tracr.example.com` | **YES** |
+| `NEXT_PUBLIC_API_URL` | **Railway (Current)** | `https://web-production-c4a4.up.railway.app` | **YES** |
 | `NEXT_PUBLIC_APP_NAME` | Application name | `Tracr` | No (defaults to "Tracr") |
 | `NEXT_PUBLIC_APP_VERSION` | Current version | `1.0.0` | No (defaults to "1.0.0") |
+
+**For the current Railway deployment, use**: `https://web-production-c4a4.up.railway.app`
 
 3. **Set for all environments**: Production, Preview, Development
 4. **Click "Save"** for each variable
@@ -222,6 +236,8 @@ Restart the API backend to apply changes.
 
 Agents communicate directly with the API backend, not the web frontend. After deployment, configure agents to point to your production API URL.
 
+**Railway-Specific Agent Deployment**: See [RAILWAY_DEPLOYMENT.md](../RAILWAY_DEPLOYMENT.md) for complete Railway agent setup instructions and PowerShell deployment scripts.
+
 ### Configuration Methods
 
 #### Method 1: Configuration File (Recommended)
@@ -231,7 +247,7 @@ Agents communicate directly with the API backend, not the web frontend. After de
 Edit the configuration file:
 ```json
 {
-  "api_endpoint": "https://api.tracr.example.com",
+  "api_endpoint": "https://web-production-c4a4.up.railway.app",
   "collection_interval": "15m",
   "heartbeat_interval": "5m",
   "log_level": "info"
@@ -247,6 +263,10 @@ Restart-Service TracrAgent
 
 Set the `TRACR_API_ENDPOINT` environment variable:
 ```powershell
+# Railway API (Current Production)
+[System.Environment]::SetEnvironmentVariable("TRACR_API_ENDPOINT", "https://web-production-c4a4.up.railway.app", "Machine")
+
+# Generic example
 [System.Environment]::SetEnvironmentVariable("TRACR_API_ENDPOINT", "https://api.tracr.example.com", "Machine")
 ```
 
@@ -256,6 +276,10 @@ Restart the Tracr Agent service to apply changes.
 
 During agent installation, provide the API endpoint as a parameter:
 ```cmd
+# Railway API (Current Production)
+msiexec /i TracrAgent.msi API_ENDPOINT=https://web-production-c4a4.up.railway.app /quiet
+
+# Generic example
 msiexec /i TracrAgent.msi API_ENDPOINT=https://api.tracr.example.com /quiet
 ```
 

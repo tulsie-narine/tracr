@@ -61,7 +61,41 @@ The system follows a three-tier architecture with secure communication between c
 - Admin controls for device management and commands
 - Audit trail for administrative actions
 
-## Quick Start
+## Quick Start - Railway + Vercel Deployment
+
+The project is currently deployed with:
+- **API Backend**: Railway (`https://web-production-c4a4.up.railway.app`)
+- **Web Frontend**: Vercel (`https://tracr-silk.vercel.app`)
+- **Database**: Railway PostgreSQL
+
+### Production Deployment (Current Setup)
+
+1. **Verify Infrastructure**
+   - Railway API is running and accessible
+   - Vercel frontend environment variables are configured
+   - Admin login works: `admin` / `admin123`
+
+2. **Deploy Agent to Windows VMs**
+   ```bash
+   # Build agent
+   cd agent
+   make build
+   
+   # Copy to Windows VM and configure
+   .\deploy-to-railway.ps1
+   .\verify-railway-connection.ps1
+   ```
+
+3. **Verify End-to-End**
+   - Devices appear in Vercel frontend: https://tracr-silk.vercel.app
+   - Agent shows "Online" status
+   - Data collection working (snapshots, hardware info)
+
+**Complete Instructions**: See [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md)
+
+**PowerShell Scripts**: Available in `agent/` directory
+- `deploy-to-railway.ps1` - Configure agent for Railway
+- `verify-railway-connection.ps1` - Test connectivity
 
 ### Development Setup
 
@@ -104,6 +138,14 @@ The system follows a three-tier architecture with secure communication between c
 - 2+ CPU cores, 4GB+ RAM for small deployments
 - PostgreSQL 13+ database
 - TLS certificate for HTTPS communication
+
+## Deployment URLs
+
+**Current Production Deployment:**
+- **API Backend**: https://web-production-c4a4.up.railway.app
+- **Web Frontend**: https://tracr-silk.vercel.app
+- **Database**: Railway PostgreSQL (managed)
+- **Documentation**: [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md)
 
 ## Deployment
 

@@ -1,0 +1,12 @@
+{
+  "api_endpoint": "https://web-production-c4a4.up.railway.app",
+  "collection_interval": "15m",
+  "jitter_percent": 0.1,
+  "max_retries": 5,
+  "backoff_multiplier": 2.0,
+  "max_backoff_time": "5m",
+  "log_level": "INFO",
+  "request_timeout": "30s",
+  "heartbeat_interval": "5m",
+  "command_poll_interval": "60s"
+}
