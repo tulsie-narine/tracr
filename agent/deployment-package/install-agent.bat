@@ -122,9 +122,12 @@ echo SUCCESS: Agent service installed.
 echo.
 
 echo Step 7: Configuring for Railway...
-powershell -ExecutionPolicy Bypass -File "deploy-to-railway.ps1"
+powershell -ExecutionPolicy Bypass -File "deploy-to-railway-clean.ps1"
 if %errorlevel% neq 0 (
     echo ERROR: Failed to configure agent. Check the PowerShell output above.
+    echo.
+    echo If PowerShell syntax errors persist, try running the script directly:
+    echo   powershell -ExecutionPolicy Bypass -File "deploy-to-railway-clean.ps1"
     pause
     exit /b 1
 )
