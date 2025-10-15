@@ -31,26 +31,28 @@ if (-not (Test-Path $AgentExePath)) {
     exit 1
 }
 
-Write-Host "✓ Agent executable found" -ForegroundColor Green
+Write-Host "Success: Agent executable found" -ForegroundColor Green
 
 # Check if agent service exists
 try {
     $service = Get-Service -Name $ServiceName -ErrorAction Stop
-    Write-Host "✓ Agent service found (Status: $($service.Status))" -ForegroundColor Green
-} catch {
+    Write-Host "Success: Agent service found (Status: $($service.Status))" -ForegroundColor Green
+}
+catch {
     Write-Host "ERROR: Agent service not found" -ForegroundColor Red
     Write-Host "Please install the agent service first using:" -ForegroundColor Yellow
     Write-Host "  .\agent.exe -install" -ForegroundColor Yellow
     exit 1
 }
 
-Write-Host "`nStep 2: Configuring Railway API endpoint..." -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Step 2: Configuring Railway API endpoint..." -ForegroundColor Cyan
 
 # Create config directory if it doesn't exist
 $ConfigDir = Split-Path $ConfigPath -Parent
 if (-not (Test-Path $ConfigDir)) {
     New-Item -ItemType Directory -Path $ConfigDir -Force | Out-Null
-    Write-Host "✓ Created config directory: $ConfigDir" -ForegroundColor Green
+    Write-Host "Success: Created config directory: $ConfigDir" -ForegroundColor Green
 }
 
 # Read existing config or create default
@@ -72,8 +74,9 @@ if (Test-Path $ConfigPath) {
             device_id = $configContent.device_id
             device_token = $configContent.device_token
         }
-        Write-Host "✓ Loaded existing configuration" -ForegroundColor Green
-    } catch {
+        Write-Host "Success: Loaded existing configuration" -ForegroundColor Green
+    }
+    catch {
         Write-Host "WARNING: Could not read existing config, using defaults" -ForegroundColor Yellow
     }
 }
@@ -94,26 +97,30 @@ $oldEndpoint = $config.api_endpoint
 $config.api_endpoint = $ApiUrl
 
 if ($oldEndpoint -eq $ApiUrl -and -not $Force) {
-    Write-Host "✓ API endpoint already configured for Railway: $ApiUrl" -ForegroundColor Green
-} else {
+    Write-Host "Success: API endpoint already configured for Railway: $ApiUrl" -ForegroundColor Green
+}
+else {
     # Write updated config
     try {
         $config | ConvertTo-Json -Depth 10 | Set-Content $ConfigPath -Encoding UTF8
-        Write-Host "✓ Updated API endpoint: $oldEndpoint -> $ApiUrl" -ForegroundColor Green
-    } catch {
+        Write-Host "Success: Updated API endpoint: $oldEndpoint -> $ApiUrl" -ForegroundColor Green
+    }
+    catch {
         Write-Host "ERROR: Failed to write config file: $_" -ForegroundColor Red
         exit 1
     }
 }
 
-Write-Host "`nStep 3: Restarting agent service..." -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Step 3: Restarting agent service..." -ForegroundColor Cyan
 
 # Stop service if running
 if ($service.Status -eq "Running") {
     try {
         Stop-Service -Name $ServiceName -Force -ErrorAction Stop
-        Write-Host "✓ Stopped agent service" -ForegroundColor Green
-    } catch {
+        Write-Host "Success: Stopped agent service" -ForegroundColor Green
+    }
+    catch {
         Write-Host "ERROR: Failed to stop service: $_" -ForegroundColor Red
         exit 1
     }
@@ -150,20 +157,24 @@ $service = Get-Service -Name $ServiceName
 if ($service.Status -ne "Running") {
     Write-Host "WARNING: Service is not running (Status: $($service.Status))" -ForegroundColor Yellow
     Write-Host "Check the agent logs and Windows Event Log for errors" -ForegroundColor Yellow
-} else {
-    Write-Host "✓ Service is running successfully" -ForegroundColor Green
+}
+else {
+    Write-Host "Success: Service is running successfully" -ForegroundColor Green
 }
 
-Write-Host "`nDeployment Summary:" -ForegroundColor Green
+Write-Host ""
+Write-Host "Deployment Summary:" -ForegroundColor Green
 Write-Host "==================" -ForegroundColor Green
 Write-Host "API Endpoint: $ApiUrl" -ForegroundColor White
 Write-Host "Config File: $ConfigPath" -ForegroundColor White
 Write-Host "Service Status: $($service.Status)" -ForegroundColor White
 
-Write-Host "`nNext Steps:" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Next Steps:" -ForegroundColor Cyan
 Write-Host "1. Run verification script: .\verify-railway-connection.ps1" -ForegroundColor Yellow
 Write-Host "2. Check agent logs: Get-Content 'C:\ProgramData\TracrAgent\logs\agent.log' -Tail 20" -ForegroundColor Yellow
 Write-Host "3. Verify device appears in web frontend: https://tracr-silk.vercel.app" -ForegroundColor Yellow
 Write-Host "4. Login with: admin / admin123" -ForegroundColor Yellow
 
-Write-Host "`nDeployment completed successfully!" -ForegroundColor Green
+Write-Host ""
+Write-Host "Deployment completed successfully!" -ForegroundColor Green
