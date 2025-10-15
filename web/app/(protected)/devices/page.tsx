@@ -6,7 +6,7 @@ import useSWR from 'swr'
 import Link from 'next/link'
 import { fetchDevices } from '@/lib/api-client'
 import { config } from '@/lib/env'
-import { formatUptime, formatPercentage, safeFormatDistanceToNow } from '@/lib/utils'
+import { formatUptime, formatPercentage, safeFormatDistanceToNow, validateDeviceId } from '@/lib/utils'
 import { useDebounce } from '@/lib/hooks/use-debounce'
 import { DeviceStatus } from '@/types'
 import {
@@ -193,12 +193,19 @@ export default function DevicesPage() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <Link 
-                          href={`/devices/${device.id}`}
-                          className="font-medium hover:underline"
-                        >
-                          {device.hostname}
-                        </Link>
+                        {validateDeviceId(device.id) ? (
+                          <Link 
+                            href={`/devices/${device.id}`}
+                            className="font-medium hover:underline"
+                          >
+                            {device.hostname}
+                          </Link>
+                        ) : (
+                          <span className="font-medium text-muted-foreground cursor-not-allowed">
+                            {device.hostname}
+                            <span className="ml-2 text-xs text-red-500">(Invalid ID)</span>
+                          </span>
+                        )}
                         <div className="text-sm text-muted-foreground md:hidden">
                           {device.os_caption}
                         </div>
@@ -235,12 +242,19 @@ export default function DevicesPage() {
                       }
                     </TableCell>
                     <TableCell>
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/devices/${device.id}`} className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
-                          View
-                        </Link>
-                      </Button>
+                      {validateDeviceId(device.id) ? (
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/devices/${device.id}`} className="flex items-center gap-1">
+                            <Eye className="h-3 w-3" />
+                            View
+                          </Link>
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="sm" disabled className="cursor-not-allowed">
+                          <Eye className="h-3 w-3 mr-1" />
+                          Invalid ID
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

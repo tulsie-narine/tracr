@@ -42,6 +42,14 @@ function InvalidDeviceIdPage({ deviceId, router }: { deviceId: string; router: R
               <p className="text-muted-foreground max-w-md">
                 Device IDs must be valid UUIDs. The provided ID &ldquo;{deviceId}&rdquo; is not in the correct format.
               </p>
+              <div className="bg-muted p-4 rounded-lg text-left max-w-md">
+                <h4 className="font-medium mb-2">What this means:</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• This device was likely registered with a development/mock API server</li>
+                  <li>• Production systems require UUID-formatted device IDs</li>
+                  <li>• The device needs to be re-registered with a production API</li>
+                </ul>
+              </div>
               <div className="flex gap-2">
                 <Button onClick={() => router.push('/devices')}>
                   Back to Device List

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -981,5 +982,44 @@ func (h *Handler) ListAuditLogs(c *fiber.Ctx) error {
 			"limit":       limit,
 			"total_pages": totalPages,
 		},
+	})
+}
+
+// DeleteDevice handles device deletion
+func (h *Handler) DeleteDevice(c *fiber.Ctx) error {
+	deviceIDStr := c.Params("device_id")
+	
+	// Parse device ID
+	deviceID, err := uuid.Parse(deviceIDStr)
+	if err != nil {
+		return ErrorResponse(c, fiber.StatusBadRequest, "Invalid device ID format")
+	}
+
+	// Check if device exists
+	device, err := FindDeviceByID(h.DB, deviceID)
+	if err != nil {
+		return ErrorResponse(c, fiber.StatusNotFound, "Device not found")
+	}
+	if device == nil {
+		return ErrorResponse(c, fiber.StatusNotFound, "Device not found")
+	}
+
+	// Delete device (this will cascade delete related records)
+	if err := DeleteDevice(h.DB, deviceID); err != nil {
+		log.Printf("[ERROR] Failed to delete device %s: %v", deviceID, err)
+		return ErrorResponse(c, fiber.StatusInternalServerError, "Failed to delete device")
+	}
+
+	// Log the deletion
+	log.Printf("[INFO] Device deleted: %s (%s)", device.Hostname, deviceID)
+
+	// Log audit event
+	LogAuditAction(h.DB, c, "delete_device", &deviceID, fiber.Map{
+		"hostname": device.Hostname,
+	})
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"message": fmt.Sprintf("Device %s deleted successfully", device.Hostname),
 	})
 }

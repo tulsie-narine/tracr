@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -11,6 +12,9 @@ app.use(express.json());
 
 // In-memory storage for registered devices
 const registeredDevices = new Map();
+
+// Clear all devices on startup for clean testing
+registeredDevices.clear();
 
 // Mock login endpoint
 app.post('/v1/auth/login', (req, res) => {
@@ -79,7 +83,7 @@ app.post('/v1/agents/register', (req, res) => {
     });
   } else {
     // Generate a new device ID and token
-    deviceId = `device-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    deviceId = uuidv4();
     deviceToken = `token-${Math.random().toString(36).substring(2, 32)}`;
     
     // Store the device
@@ -254,6 +258,25 @@ app.get('/v1/devices/:deviceId', (req, res) => {
     first_seen: device.first_seen,
     inventory_data: device.inventory_data
   });
+});
+
+// Mock clear all devices (for testing)
+app.delete('/v1/devices', (req, res) => {
+  const deviceCount = registeredDevices.size;
+  registeredDevices.clear();
+  res.json({ success: true, message: `Cleared ${deviceCount} devices` });
+});
+
+// Mock delete device
+app.delete('/v1/devices/:deviceId', (req, res) => {
+  const { deviceId } = req.params;
+  
+  if (!registeredDevices.has(deviceId)) {
+    return res.status(404).json({ error: 'Device not found' });
+  }
+  
+  registeredDevices.delete(deviceId);
+  res.json({ success: true, message: `Device ${deviceId} deleted` });
 });
 
 // Mock users list

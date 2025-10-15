@@ -811,3 +811,9 @@ func DeleteUser(db *sqlx.DB, userID uuid.UUID) error {
 	_, err := db.Exec(query, userID)
 	return err
 }
+
+func DeleteDevice(db *sqlx.DB, deviceID uuid.UUID) error {
+	query := `DELETE FROM devices WHERE id = $1`
+	_, err := db.Exec(query, deviceID)
+	return err
+}

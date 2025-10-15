@@ -57,6 +57,7 @@ func Setup(app *fiber.App, db *sqlx.DB, cfg *config.Config) {
 	deviceGroup.Get("/:device_id/snapshots/:snapshot_id", middleware.RequireRole(models.UserRoleViewer), handler.GetSnapshot)
 	deviceGroup.Post("/:device_id/commands", middleware.RequireRole(models.UserRoleAdmin), handler.CreateCommand)
 	deviceGroup.Get("/:device_id/commands", middleware.RequireRole(models.UserRoleViewer), handler.ListDeviceCommands)
+	deviceGroup.Delete("/:device_id", middleware.RequireRole(models.UserRoleAdmin), handler.DeleteDevice)
 
 	// Software catalog routes
 	softwareGroup := app.Group("/v1/software")
