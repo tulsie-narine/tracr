@@ -234,8 +234,11 @@ Use this checklist to ensure complete deployment:
 - [ ] Agent executable installed: `C:\Program Files\TracrAgent\agent.exe`
 - [ ] Agent service running: `Get-Service TracrAgent`
 - [ ] Config file has Railway URL: `C:\ProgramData\TracrAgent\config.json`
-- [ ] Agent logs show successful registration
+- [ ] Agent config file contains device_id and device_token
+- [ ] Agent logs show "Registration successful" message
+- [ ] Agent logs show "Inventory sent successfully" messages
 - [ ] No connection errors in agent logs
+- [ ] Device appears in Vercel frontend within 5 minutes of agent start
 
 ### End-to-End Verification
 - [ ] Device appears in frontend device list
@@ -297,6 +300,43 @@ Use this checklist to ensure complete deployment:
 - **Causes**: Agent not sending heartbeats (default: every 5 minutes)
 - **Check**: Agent service running and logs show heartbeat activity
 - **Fix**: Restart agent service, verify network connectivity
+
+**Problem**: Device not appearing in dashboard after agent installation
+- **Cause**: Agent not registered with Railway API
+- **Check**: Open `C:\ProgramData\TracrAgent\config.json`
+- **Look for**: `device_id` and `device_token` fields
+- **If empty**: Registration failed
+- **Solution**:
+  - Check agent logs: `C:\ProgramData\TracrAgent\logs\agent.log`
+  - Look for "Registration failed" or "Device not registered" messages
+  - Verify Railway API is accessible from agent machine
+  - Test connectivity: `curl https://web-production-c4a4.up.railway.app`
+  - Restart agent service to retry registration
+
+**Problem**: Registration endpoint not responding
+- **Cause**: Railway API backend not running or network issue
+- **Check**: Test registration endpoint manually
+- **Command**: 
+  ```bash
+  curl -X POST https://web-production-c4a4.up.railway.app/v1/agents/register \
+    -H "Content-Type: application/json" \
+    -d '{"hostname":"test","os_version":"Windows 11","agent_version":"1.0.0"}'
+  ```
+- **Expected**: JSON response with device_id and device_token
+- **If fails**: Check Railway deployment status, check API logs
+
+**Problem**: Device registered but not sending data
+- **Cause**: Device token authentication failing
+- **Check**: Config file has device_id and device_token
+- **Check**: Agent logs show "Inventory sent successfully" messages
+- **If not**: Check token is valid, check API authentication logs
+- **Solution**: Delete config file and restart service to re-register
+
+**Problem**: Multiple devices with same hostname
+- **Cause**: Agent re-registered multiple times
+- **Explanation**: API creates new device if hostname doesn't match exactly
+- **Solution**: API should return existing device_id for matching hostname
+- **Workaround**: Delete duplicate devices from web dashboard
 
 ### CORS Issues
 

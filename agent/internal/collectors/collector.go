@@ -1,6 +1,7 @@
 package collectors
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -155,4 +156,28 @@ func (cm *CollectorManager) CollectAll() (*InventorySnapshot, error) {
 	}
 
 	return snapshot, nil
+}
+
+// CollectIdentity collects only identity information for registration
+func (cm *CollectorManager) CollectIdentity() (*Identity, error) {
+	data, err := cm.identityCollector.Collect()
+	if err != nil {
+		return nil, err
+	}
+	if identity, ok := data.(Identity); ok {
+		return &identity, nil
+	}
+	return nil, fmt.Errorf("identity collector returned unexpected type")
+}
+
+// CollectOS collects only OS information for registration
+func (cm *CollectorManager) CollectOS() (*OS, error) {
+	data, err := cm.osCollector.Collect()
+	if err != nil {
+		return nil, err
+	}
+	if os, ok := data.(OS); ok {
+		return &os, nil
+	}
+	return nil, fmt.Errorf("OS collector returned unexpected type")
 }

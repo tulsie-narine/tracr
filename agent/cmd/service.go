@@ -82,6 +82,12 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	}
 }
 
+// GetScheduler returns the scheduler instance for system tray integration
+// Returns nil if the service hasn't started yet
+func (s *service) GetScheduler() *scheduler.Scheduler {
+	return s.scheduler
+}
+
 func RunService(name string) error {
 	return svc.Run(name, &service{})
 }

@@ -43,6 +43,11 @@ func (s *Scheduler) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to initialize storage: %w", err)
 	}
 
+	// Attempt device registration
+	if err := s.ensureRegistered(); err != nil {
+		logger.Error("Failed to register device, will retry during collection", "error", err)
+	}
+
 	logger.Info("Scheduler starting", "interval", s.config.CollectionInterval)
 
 	// Run initial collection immediately
@@ -88,6 +93,16 @@ func (s *Scheduler) runCollection() {
 	logger.Info("Starting inventory collection")
 	
 	start := time.Now()
+
+	// Ensure device is registered before collecting data
+	if s.config.DeviceID == "" || s.config.DeviceToken == "" {
+		logger.Info("Device not registered, attempting registration...")
+		if err := s.ensureRegistered(); err != nil {
+			logger.Error("Registration failed, will retry next cycle", "error", err)
+			return
+		}
+		logger.Info("Registration successful, proceeding with collection")
+	}
 	
 	// Collect inventory data
 	snapshot, err := s.collectorManager.CollectAll()
@@ -156,6 +171,75 @@ func (s *Scheduler) calculateJitteredInterval() time.Duration {
 		"final", jitteredInterval)
 
 	return jitteredInterval
+}
+
+// ensureRegistered handles device registration with the API backend
+func (s *Scheduler) ensureRegistered() error {
+	// Check if already registered
+	if s.config.DeviceID != "" && s.config.DeviceToken != "" {
+		logger.Info("Device already registered", "device_id", s.config.DeviceID)
+		return nil
+	}
+
+	logger.Info("Device not registered, registering with API...")
+
+	// Collect identity information
+	identity, err := s.collectorManager.CollectIdentity()
+	if err != nil {
+		return fmt.Errorf("failed to collect identity information: %w", err)
+	}
+
+	// Collect OS information
+	os, err := s.collectorManager.CollectOS()
+	if err != nil {
+		return fmt.Errorf("failed to collect OS information: %w", err)
+	}
+
+	// Prepare registration data
+	hostname := identity.Hostname
+	osVersion := fmt.Sprintf("%s %s", os.Caption, os.Version)
+	agentVersion := version.GetVersion()
+
+	// Call registration API
+	resp, err := s.client.Register(hostname, osVersion, agentVersion)
+	if err != nil {
+		return fmt.Errorf("registration API call failed: %w", err)
+	}
+
+	// Save credentials to config
+	s.config.DeviceID = resp.DeviceID
+	s.config.DeviceToken = resp.DeviceToken
+
+	if err := s.config.Save(); err != nil {
+		return fmt.Errorf("failed to save device credentials to config: %w", err)
+	}
+
+	logger.Info("Registration successful", "device_id", resp.DeviceID, "hostname", hostname)
+	return nil
+}
+
+// ForceRegistration clears existing credentials and forces re-registration
+func (s *Scheduler) ForceRegistration() error {
+	logger.Info("Force registration requested")
+	
+	// Clear existing credentials
+	s.config.DeviceID = ""
+	s.config.DeviceToken = ""
+
+	// Call registration
+	return s.ensureRegistered()
+}
+
+// GetRegistrationStatus returns the current device registration status
+func (s *Scheduler) GetRegistrationStatus() (registered bool, deviceID string, lastSeen time.Time) {
+	// Check registration status
+	registered = s.config.DeviceID != "" && s.config.DeviceToken != ""
+	deviceID = s.config.DeviceID
+
+	// Get last sync time from storage
+	lastSeen = s.storage.GetLastSyncTime()
+
+	return registered, deviceID, lastSeen
 }
 
 // TriggerCollection forces an immediate collection run

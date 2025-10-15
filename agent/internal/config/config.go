@@ -83,6 +83,8 @@ func Load() (*Config, error) {
 	return cfg, nil
 }
 
+// Save writes the configuration to disk
+// Note: This method is not thread-safe and should not be called concurrently
 func (c *Config) Save() error {
 	configPath := getConfigPath()
 	

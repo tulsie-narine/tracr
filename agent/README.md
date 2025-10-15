@@ -257,6 +257,106 @@ Then restart the service: `Restart-Service TracrAgent`
 
 **Complete Railway Guide**: [RAILWAY_DEPLOYMENT.md](../RAILWAY_DEPLOYMENT.md)
 
+## Device Registration
+
+The Tracr Agent automatically registers with the API backend on first startup. This section explains the registration process and troubleshooting steps.
+
+### Automatic Registration
+
+When the agent starts for the first time or with empty device credentials:
+
+1. **Registration happens during service startup**
+2. **Device credentials are saved to config file**
+3. **Subsequent runs use saved credentials**
+4. **Registration is automatically retried if it fails**
+
+### Registration Process
+
+The agent collects minimal identity information and registers with the API:
+
+1. **Collect hostname and OS version** from the local system
+2. **Send registration request** to `POST /v1/agents/register`
+3. **API returns device_id and device_token**
+4. **Credentials are saved** to `C:\ProgramData\TracrAgent\config.json`
+5. **Agent can now send inventory data**
+
+### Verification
+
+To verify successful registration:
+
+1. **Check config file** for device_id and device_token fields:
+   ```json
+   {
+     "device_id": "abc123def456",
+     "device_token": "xyz789..."
+   }
+   ```
+
+2. **Check logs** for "Registration successful" message:
+   ```
+   2025-10-15 12:34:56 [INFO] Registration successful | device_id=abc123def456 hostname=DESKTOP-ABC123
+   ```
+
+3. **Verify in web dashboard**:
+   - Go to https://tracr-silk.vercel.app
+   - Login with admin / admin123
+   - Device should appear in Devices page
+   - Status should show "Online" within 5 minutes
+
+### Manual Re-registration
+
+To force the agent to register as a new device:
+
+1. **Stop the service**: `Stop-Service TracrAgent`
+2. **Delete config file**: `Remove-Item C:\ProgramData\TracrAgent\config.json`
+3. **Start the service**: `Start-Service TracrAgent`
+4. **Agent will register as new device**
+
+### Troubleshooting Registration Issues
+
+#### "Device not registered" in logs
+
+**Cause**: Registration failed due to network or API issues
+
+**Solutions**:
+- Check network connectivity to Railway API
+- Verify API URL in config: `https://web-production-c4a4.up.railway.app`
+- Check firewall rules allow outbound HTTPS
+- Review agent logs for detailed error messages
+
+#### "Registration failed" errors
+
+**Cause**: API endpoint not accessible or returning errors
+
+**Solutions**:
+- Test API connectivity: `curl https://web-production-c4a4.up.railway.app`
+- Verify SSL certificate is valid
+- Check Railway deployment status
+- Check API logs for server-side errors
+- Retry registration: restart service
+
+#### Device appears but shows "Offline"
+
+**Cause**: Registration succeeded but heartbeat failing
+
+**Solutions**:
+- Registration succeeded but data transmission failing
+- Check device_token in config file is not empty
+- Verify token authentication is working
+- Check API logs for authentication errors
+- Check agent logs for "Inventory sent successfully" messages
+
+### System Tray Integration
+
+The system tray icon (when implemented) will show:
+
+- **Registration status**: "Registered" vs "Not Registered"
+- **Device ID**: For identification purposes
+- **Last check-in time**: Last successful API communication
+- **"Force Check-In" button**: Triggers immediate registration attempt
+
+This is useful for testing connectivity and troubleshooting registration issues.
+
 ### Configuration Methods
 
 #### Method 1: Configuration File (Recommended)
