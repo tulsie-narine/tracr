@@ -120,7 +120,7 @@ if not exist "C:\ProgramData\TracrAgent\config.json" (
 ) else (
     echo Configuration file already exists.
     echo Checking for BOM issues in existing config...
-    powershell -Command "try { Get-Content 'C:\ProgramData\TracrAgent\config.json' -Raw | ConvertFrom-Json | Out-Null; Write-Host 'SUCCESS: Existing configuration is valid.' } catch { if ($_.Exception.Message -like '*invalid character*') { Write-Host 'WARNING: Existing config has BOM issues. Service may fail to start.' } else { Write-Host 'ERROR: Configuration validation failed:' $_.Exception.Message } }"
+    powershell -Command "try { Get-Content 'C:\ProgramData\TracrAgent\config.json' -Raw | ConvertFrom-Json | Out-Null; Write-Host 'SUCCESS: Existing configuration is valid.' } catch { if ($_.Exception.Message -like '*invalid character*') { Write-Host 'WARNING: Existing config has BOM issues. Recreating clean config...'; Remove-Item 'C:\ProgramData\TracrAgent\config.json' -Force; $config = @{'api_endpoint' = 'https://web-production-c4a4.up.railway.app'; 'collection_interval' = '15m'; 'jitter_percent' = 0.1; 'max_retries' = 5; 'backoff_multiplier' = 2.0; 'max_backoff_time' = '5m'; 'data_dir' = 'C:\ProgramData\TracrAgent\data'; 'snapshot_path' = 'C:\ProgramData\TracrAgent\data\snapshots'; 'log_level' = 'INFO'; 'log_dir' = 'C:\ProgramData\TracrAgent\logs'; 'request_timeout' = '30s'; 'heartbeat_interval' = '5m'; 'command_poll_interval' = '60s'}; $config | ConvertTo-Json | Out-File -FilePath 'C:\ProgramData\TracrAgent\config.json' -Encoding UTF8 -NoNewline; Write-Host 'SUCCESS: Clean configuration created.' } else { Write-Host 'ERROR: Configuration validation failed:' $_.Exception.Message } }"
 )
 echo.
 
@@ -152,6 +152,9 @@ if %errorlevel% neq 0 (
     echo 4. Manual fix: Run fix-config-bom.bat (if available)
     echo.
     echo Attempting automatic BOM fix...
+    echo Removing existing config file with BOM...
+    del "C:\ProgramData\TracrAgent\config.json" >nul 2>&1
+    echo Creating new clean config file...
     powershell -Command "$config = @{'api_endpoint' = 'https://web-production-c4a4.up.railway.app'; 'collection_interval' = '15m'; 'jitter_percent' = 0.1; 'max_retries' = 5; 'backoff_multiplier' = 2.0; 'max_backoff_time' = '5m'; 'data_dir' = 'C:\ProgramData\TracrAgent\data'; 'snapshot_path' = 'C:\ProgramData\TracrAgent\data\snapshots'; 'log_level' = 'INFO'; 'log_dir' = 'C:\ProgramData\TracrAgent\logs'; 'request_timeout' = '30s'; 'heartbeat_interval' = '5m'; 'command_poll_interval' = '60s'}; $config | ConvertTo-Json | Out-File -FilePath 'C:\ProgramData\TracrAgent\config.json' -Encoding UTF8 -NoNewline"
     echo Attempting service restart...
     sc stop TracrAgent >nul 2>&1
@@ -169,7 +172,7 @@ echo SUCCESS: Agent configured for Railway.
 echo.
 
 echo Step 8: Verifying Installation...
-powershell -ExecutionPolicy Bypass -File "verify-railway-connection.ps1"
+powershell -ExecutionPolicy Bypass -File "verify-railway-connection-clean.ps1"
 echo.
 
 echo Deployment Complete!
