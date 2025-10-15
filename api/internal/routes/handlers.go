@@ -989,17 +989,28 @@ func (h *Handler) ListAuditLogs(c *fiber.Ctx) error {
 func (h *Handler) DeleteDevice(c *fiber.Ctx) error {
 	deviceIDStr := c.Params("device_id")
 	
-	// Parse device ID
-	deviceID, err := uuid.Parse(deviceIDStr)
-	if err != nil {
-		return ErrorResponse(c, fiber.StatusBadRequest, "Invalid device ID format")
+	var device *models.Device
+	var deviceID uuid.UUID
+	var err error
+	
+	// Try to parse as UUID first
+	if parsedID, parseErr := uuid.Parse(deviceIDStr); parseErr == nil {
+		// Valid UUID, find device by ID
+		deviceID = parsedID
+		device, err = FindDeviceByID(h.DB, deviceID)
+		if err != nil {
+			return ErrorResponse(c, fiber.StatusNotFound, "Device not found")
+		}
+	} else {
+		// Not a valid UUID, treat as hostname
+		log.Printf("[INFO] Device ID %s is not a valid UUID, looking up by hostname", deviceIDStr)
+		device, err = FindDeviceByHostname(h.DB, deviceIDStr)
+		if err != nil {
+			return ErrorResponse(c, fiber.StatusNotFound, "Device not found")
+		}
+		deviceID = device.ID
 	}
-
-	// Check if device exists
-	device, err := FindDeviceByID(h.DB, deviceID)
-	if err != nil {
-		return ErrorResponse(c, fiber.StatusNotFound, "Device not found")
-	}
+	
 	if device == nil {
 		return ErrorResponse(c, fiber.StatusNotFound, "Device not found")
 	}
