@@ -69,8 +69,8 @@ export default function DevicesPage() {
 
   // Fetch devices with SWR
   const { data, error, isLoading, mutate } = useSWR(
-    [config.apiUrl + '/v1/devices', { page, limit, search: debouncedSearch, status }],
-    () => fetchDevices(page, limit, debouncedSearch || undefined, status as DeviceStatus || undefined),
+    [config.apiUrl + '/v1/devices', { page: 1, limit: 50 }],
+    () => fetchDevices(1, 50),
     { refreshInterval: 60000 }
   )
 
