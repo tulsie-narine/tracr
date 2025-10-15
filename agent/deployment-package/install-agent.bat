@@ -80,6 +80,13 @@ if not exist "C:\ProgramData\TracrAgent\logs" (
 ) else (
     echo Logs directory already exists.
 )
+
+if not exist "C:\ProgramData\TracrAgent\data\snapshots" (
+    mkdir "C:\ProgramData\TracrAgent\data\snapshots"
+    echo SUCCESS: Created snapshots directory: C:\ProgramData\TracrAgent\data\snapshots
+) else (
+    echo Snapshots directory already exists.
+)
 echo.
 
 echo Step 5: Creating initial configuration...
@@ -93,6 +100,7 @@ if not exist "C:\ProgramData\TracrAgent\config.json" (
     echo   "backoff_multiplier": 2.0, >> "C:\ProgramData\TracrAgent\config.json"
     echo   "max_backoff_time": "5m", >> "C:\ProgramData\TracrAgent\config.json"
     echo   "data_dir": "C:\\ProgramData\\TracrAgent\\data", >> "C:\ProgramData\TracrAgent\config.json"
+    echo   "snapshot_path": "C:\\ProgramData\\TracrAgent\\data\\snapshots", >> "C:\ProgramData\TracrAgent\config.json"
     echo   "log_level": "INFO", >> "C:\ProgramData\TracrAgent\config.json"
     echo   "log_dir": "C:\\ProgramData\\TracrAgent\\logs", >> "C:\ProgramData\TracrAgent\config.json"
     echo   "request_timeout": "30s", >> "C:\ProgramData\TracrAgent\config.json"
