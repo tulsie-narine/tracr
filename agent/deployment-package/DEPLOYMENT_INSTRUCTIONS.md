@@ -1,118 +1,62 @@
-# Tracr Agent - Railway Deployment Package
+# Tracr Agent Installation Troubleshooting Guide
 
-## Quick Start Instructions
+## Quick Fix for "Service Already Exists" Error
 
-This package contains everything needed to deploy the Tracr Agent to Windows VMs with Railway API backend configuration.
+If you encounter the error "service TracrAgent already exists", follow these steps:
 
-### What's Included
+### Option 1: Use the Automatic Removal (Recommended)
+1. Run `uninstall-agent.bat` as Administrator first
+2. Wait for complete removal
+3. Then run `install-agent.bat` as Administrator
 
-- `agent.exe` - Tracr Agent executable (v1.0.0-railway)
-- `deploy-to-railway.ps1` - Automated configuration script  
+### Option 2: Manual Removal Steps
+1. **Stop the existing service:**
+   ```cmd
+   sc stop TracrAgent
+   ```
+
+2. **Remove the service registration:**
+   ```cmd
+   sc delete TracrAgent
+   ```
+
+3. **Clean up files (optional but recommended):**
+   ```cmd
+   rmdir /s /q "C:\Program Files\TracrAgent"
+   rmdir /s /q "C:\ProgramData\TracrAgent"
+   ```
+
+4. **Wait 30 seconds**, then run `install-agent.bat` again
+
+## Installation Requirements
+
+- **Windows Administrator privileges required**
+- **Windows 10/11 or Windows Server 2016+**
+- **Network access to Railway API endpoint**
+
+## Complete Installation Process
+
+1. **Download the deployment package** to your local machine
+2. **Extract all files** to a folder (e.g., `C:\Temp\TracrAgent`)
+3. **Right-click Command Prompt** → "Run as administrator"
+4. **Navigate to the folder:** `cd C:\Temp\TracrAgent`
+5. **Run the installer:** `install-agent.bat`
+
+## Files in This Package
+
+- `agent.exe` - The main Tracr Agent executable (9.3MB)
+- `install-agent.bat` - Automated installation script
+- `uninstall-agent.bat` - Complete removal tool
+- `deploy-to-railway.ps1` - Railway API configuration script
 - `verify-railway-connection.ps1` - Connection verification script
 - `DEPLOYMENT_INSTRUCTIONS.md` - This file
 
-### Railway Configuration
+## Installation Steps Explained
 
-The agent is pre-configured to connect to:
-**API Endpoint**: https://web-production-c4a4.up.railway.app
+The installer performs these actions:
 
-### Deployment Steps
-
-1. **Copy all files to Windows VM** (via RDP, network share, etc.)
-
-2. **Open PowerShell as Administrator**
-   ```powershell
-   # Navigate to agent directory
-   cd C:\path\to\agent\files
-   ```
-
-3. **Install the Agent Service**
-   ```powershell
-   .\agent.exe -install
-   ```
-   
-   This will:
-   - Copy agent.exe to C:\Program Files\TracrAgent\
-   - Create Windows service "TracrAgent"
-   - Set service to start automatically
-   - Create log directory: C:\ProgramData\TracrAgent\logs\
-
-4. **Configure for Railway**
-   ```powershell
-   .\deploy-to-railway.ps1
-   ```
-   
-   This will:
-   - Create config file with Railway API URL
-   - Configure collection intervals and logging
-   - Restart agent service
-   - Display configuration summary
-
-5. **Verify Installation**
-   ```powershell
-   .\verify-railway-connection.ps1
-   ```
-   
-   This will:
-   - Test network connectivity to Railway API
-   - Check agent service status
-   - Validate configuration file
-   - Display recent log entries
-   - Provide troubleshooting recommendations
-
-### Verification
-
-After deployment, verify in the web frontend:
-
-1. **Go to**: https://tracr-silk.vercel.app
-2. **Login**: admin / admin123  
-3. **Check Devices**: Your Windows VM should appear in the device list
-4. **Status**: Device should show "Online" (green badge)
-5. **Data Collection**: Check Snapshots tab for recent data (within 15 minutes)
-
-### Expected Timeline
-
-- Service installation: Immediate
-- First API connection: 30-60 seconds
-- Device registration: 1-2 minutes
-- First data collection: 15 minutes (default interval)
-- Device shows "Online": Within 5 minutes
-
-### Troubleshooting
-
-If issues occur:
-
-1. **Run verification script**: `.\verify-railway-connection.ps1`
-2. **Check agent logs**: 
-   ```powershell
-   Get-Content "C:\ProgramData\TracrAgent\logs\agent.log" -Tail 20
-   ```
-3. **Check service status**:
-   ```powershell
-   Get-Service TracrAgent
-   ```
-4. **Test Railway connectivity**:
-   ```powershell
-   Test-NetConnection web-production-c4a4.up.railway.app -Port 443
-   ```
-
-### Common Solutions
-
-- **Service won't start**: Check Windows Event Log, verify config file is valid JSON
-- **Can't connect to Railway**: Check firewall settings, verify network connectivity
-- **Device not appearing**: Check agent logs for registration success, refresh frontend
-
-### Support Files
-
-For complete documentation, see the repository:
-- **Complete Guide**: RAILWAY_DEPLOYMENT.md
-- **Build Instructions**: agent/AGENT_BUILD_GUIDE.md  
-- **Agent Documentation**: agent/README.md
-
-### Agent Information
-
-- **Version**: 1.0.0-railway
-- **Build Date**: 2025-10-15T13:43:46Z
-- **API Endpoint**: https://web-production-c4a4.up.railway.app (pre-configured)
-- **Platform**: Windows x86-64
-- **Service Name**: TracrAgent
+1. **Checks for existing installation** - Automatically removes old versions
+2. **Installs Windows service** - Registers TracrAgent as a system service
+3. **Configures Railway API** - Sets endpoint to https://web-production-c4a4.up.railway.app
+4. **Starts the service** - Begins data collection immediately
+5. **Verifies connection** - Tests API connectivity and authentication
