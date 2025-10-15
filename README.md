@@ -225,6 +225,69 @@ The project is currently deployed with:
 - Valid SSL certificates (agents reject self-signed certificates)
 - Minimal service account privileges for agent service
 
+## Troubleshooting Device Visibility Issues
+
+### Database Queries for Verification
+
+**Check total device count:**
+```sql
+SELECT COUNT(*) FROM devices;
+```
+
+**Find specific device:**
+```sql
+SELECT id, hostname, last_seen, status FROM devices WHERE hostname ILIKE '%DEVICE-NAME%';
+```
+
+**Check recent devices:**
+```sql
+SELECT hostname, last_seen, status FROM devices ORDER BY last_seen DESC LIMIT 10;
+```
+
+**Verify device registration:**
+```sql
+SELECT id, hostname, device_token_hash, token_created_at FROM devices WHERE hostname = 'DEVICE-NAME';
+```
+
+### Agent Configuration Verification
+
+- **Config file location**: `C:\ProgramData\TracrAgent\config.json`
+- **Required fields**: `device_id`, `device_token`, `api_endpoint`
+- **Force re-registration**: Delete `config.json` and restart agent service
+
+### Log File Locations
+
+- **Agent logs**: `C:\ProgramData\TracrAgent\logs\`
+- **API logs**: Check your deployment platform (Railway, Vercel, etc.)
+- **What to look for**: Registration messages, authentication errors, inventory send confirmations
+
+### Common Issues and Solutions
+
+**Device not appearing in web interface:**
+- **Cause**: Frontend pagination bug - if there are more than 50 devices, the device may be on page 2+
+- **Solution**: Check total device count in database; frontend shows only first 50 devices by default
+
+**Authentication failures:**
+- **Cause**: Device token mismatch between agent and database
+- **Solution**: Verify `device_token_hash` in database matches agent's token hash
+
+**Stale credentials:**
+- **Cause**: Agent using old registration credentials
+- **Solution**: Delete `config.json`, restart agent to force re-registration
+
+**Network issues:**
+- **Cause**: Agent cannot reach API endpoint
+- **Solution**: Verify API URL accessibility and SSL certificate validity
+
+### Verification Steps
+
+1. **Check agent service**: Ensure TracrAgent service is running
+2. **Verify config file**: Confirm `config.json` exists with valid `device_id` and `device_token`
+3. **Check recent logs**: Look for "Inventory sent successfully to API" messages
+4. **Query database**: Verify device exists in `devices` table
+5. **Test API directly**: Use curl to verify API returns device data
+6. **Check frontend**: Ensure device count in dashboard matches database count
+
 ## Documentation
 
 ### Component-Specific Documentation

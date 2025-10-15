@@ -2,7 +2,9 @@ package middleware
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -45,6 +47,9 @@ func DeviceAuth(db *sqlx.DB) fiber.Handler {
 			})
 		}
 
+		log.Printf("[DEBUG] Authenticating device request: device_id=%s, path=%s, method=%s", 
+			deviceIDStr, c.Path(), c.Method())
+
 		deviceID, err := uuid.Parse(deviceIDStr)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -57,15 +62,27 @@ func DeviceAuth(db *sqlx.DB) fiber.Handler {
 		hasher.Write([]byte(token))
 		tokenHash := fmt.Sprintf("%x", hasher.Sum(nil))
 
+		log.Printf("[DEBUG] Token hashed for authentication: token_hash_prefix=%s", tokenHash[:8])
+
 		// Query device and validate token
 		var device models.Device
 		query := "SELECT * FROM devices WHERE id = $1 AND device_token_hash = $2"
 		err = db.Get(&device, query, deviceID, tokenHash)
 		if err != nil {
+			if err == sql.ErrNoRows {
+				log.Printf("[ERROR] Device authentication failed - device not found or token mismatch: device_id=%s, queried_device_id=%s, hint=Check if device is registered in database", 
+					deviceID, deviceID)
+			} else {
+				log.Printf("[ERROR] Device authentication database error: device_id=%s, error=%v, error_type=database_query", 
+					deviceID, err)
+			}
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Invalid device ID or token",
 			})
 		}
+
+		log.Printf("[DEBUG] Device authentication successful: device_id=%s, hostname=%s, last_seen=%v", 
+			device.ID, device.Hostname, device.LastSeen)
 
 		// Store device in context for use by handlers
 		c.Locals("device", &device)

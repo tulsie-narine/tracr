@@ -227,6 +227,177 @@ The agent logs to `C:\ProgramData\TracrAgent\logs\agent.log`. Here's what to loo
   - Delete duplicate devices from web dashboard
   - Keep only the device matching the config file's device_id
 
+## Device Not Appearing in Web Interface
+
+This section addresses the most common issue: agent appears to be working (logs show successful inventory submission) but device doesn't appear in https://tracr-silk.vercel.app/devices.
+
+### Quick Diagnostic Checklist
+
+1. **Check total device count in database** (requires admin access):
+   ```sql
+   SELECT COUNT(*) FROM devices;
+   ```
+   - If count > 50, device may be on page 2+ (frontend pagination bug)
+
+2. **Find your specific device**:
+   ```sql
+   SELECT id, hostname, last_seen, status FROM devices WHERE hostname ILIKE '%YOUR-HOSTNAME%';
+   ```
+   - Should return exactly 1 row
+   - `last_seen` should be recent (< 1 hour old)
+   - `status` should be 'active'
+
+3. **Verify agent configuration**:
+   ```powershell
+   $config = Get-Content "C:\ProgramData\TracrAgent\config.json" | ConvertFrom-Json
+   Write-Host "Device ID: $($config.device_id)"
+   Write-Host "Has Token: $(![string]::IsNullOrEmpty($config.device_token))"
+   ```
+
+### Log Analysis for Device Visibility
+
+**What "Inventory sent successfully to API" means:**
+- HTTP request succeeded (status 200)
+- API accepted the data (no authentication or validation errors)
+- Data was stored in database
+
+**Enhanced logging (v1.1.0+):**
+```
+[INFO] Inventory sent successfully to API | device_id=abc123 endpoint=https://web-production-c4a4.up.railway.app timestamp=2025-10-15T12:00:00Z
+[DEBUG] Token hashed for authentication: token_hash_prefix=abc123def
+[DEBUG] Device authentication successful: device_id=abc123 hostname=DESKTOP-ABC
+```
+
+**What to look for in API logs:**
+- `[INFO] Processing inventory submission: device_id=abc123 hostname=DESKTOP-ABC volumes=3 software=94`
+- `[INFO] Created new snapshot: snapshot_id=def456 hash=abc789 collected_at=2025-10-15T12:00:00Z`
+- `[INFO] Updated device information: device_id=abc123 hostname=DESKTOP-ABC os_version=Windows 11 Pro`
+
+### Configuration File Verification
+
+**Expected format of config.json:**
+```json
+{
+  "api_endpoint": "https://web-production-c4a4.up.railway.app",
+  "device_id": "abc123def456-uuid-format",
+  "device_token": "long-random-string-here"
+}
+```
+
+**Common config file issues:**
+- **UTF-8 BOM**: File starts with invisible characters (causes JSON parsing errors)
+- **Empty fields**: device_id or device_token missing/empty
+- **Wrong API endpoint**: Points to localhost or wrong Railway URL
+- **File permissions**: Service account cannot read file
+
+**Validate config file:**
+```powershell
+# Check for BOM (should show nothing)
+Get-Content "C:\ProgramData\TracrAgent\config.json" -Encoding UTF8 | ForEach-Object { 
+    if ($_.StartsWith([char]0xFEFF)) { Write-Host "BOM detected!" }
+}
+
+# Validate JSON syntax
+try {
+    $config = Get-Content "C:\ProgramData\TracrAgent\config.json" | ConvertFrom-Json
+    Write-Host "JSON is valid"
+} catch {
+    Write-Host "JSON parsing error: $($_.Exception.Message)"
+}
+```
+
+### Force Re-registration Procedure
+
+**When to use:** Device exists in database but agent has wrong credentials, or troubleshooting authentication issues.
+
+1. **Stop the TracrAgent service:**
+   ```powershell
+   Stop-Service TracrAgent
+   ```
+
+2. **Backup current config:**
+   ```powershell
+   Copy-Item "C:\ProgramData\TracrAgent\config.json" "C:\ProgramData\TracrAgent\config.json.backup"
+   ```
+
+3. **Delete config file:**
+   ```powershell
+   Remove-Item "C:\ProgramData\TracrAgent\config.json"
+   ```
+
+4. **Start the TracrAgent service:**
+   ```powershell
+   Start-Service TracrAgent
+   ```
+
+5. **Monitor logs for registration:**
+   ```powershell
+   # Watch logs in real-time
+   Get-Content "C:\ProgramData\TracrAgent\logs\agent.log" -Wait -Tail 10
+   ```
+
+6. **Verify new credentials saved:**
+   ```powershell
+   Get-Content "C:\ProgramData\TracrAgent\config.json" | ConvertFrom-Json | Select-Object device_id, device_token
+   ```
+
+7. **Check web interface:**
+   - Device should appear within 15 minutes (next collection cycle)
+   - If still missing, check database directly
+
+### API Connectivity Testing
+
+**Test if agent can reach API:**
+```powershell
+# Health check
+Invoke-WebRequest -Uri "https://web-production-c4a4.up.railway.app/health" -UseBasicParsing
+
+# Test with agent credentials
+$config = Get-Content "C:\ProgramData\TracrAgent\config.json" | ConvertFrom-Json
+$headers = @{
+    "Authorization" = "Bearer $($config.device_token)"
+    "Content-Type" = "application/json"
+}
+
+try {
+    $response = Invoke-WebRequest -Uri "https://web-production-c4a4.up.railway.app/v1/devices" -Headers $headers -UseBasicParsing
+    Write-Host "API accessible, status: $($response.StatusCode)"
+} catch {
+    Write-Host "API error: $($_.Exception.Message)"
+}
+```
+
+**Expected response:** HTTP 200 with device list containing your device.
+
+### Database Verification (for administrators)
+
+**SQL queries to check device status:**
+```sql
+-- Check if device exists
+SELECT id, hostname, last_seen, status FROM devices WHERE hostname = 'YOUR-HOSTNAME';
+
+-- Verify token hash matches
+SELECT id, hostname, device_token_hash FROM devices WHERE hostname = 'YOUR-HOSTNAME';
+
+-- Check recent snapshots
+SELECT COUNT(*) as snapshot_count FROM snapshots WHERE device_id = (
+    SELECT id FROM devices WHERE hostname = 'YOUR-HOSTNAME'
+);
+
+-- Check last snapshot details
+SELECT s.id, s.collected_at, s.cpu_percent, s.memory_used_bytes 
+FROM snapshots s 
+JOIN devices d ON s.device_id = d.id 
+WHERE d.hostname = 'YOUR-HOSTNAME' 
+ORDER BY s.collected_at DESC LIMIT 1;
+```
+
+**Common database issues:**
+- Device exists but `last_seen` is old (> 1 hour)
+- Token hash doesn't match agent's token
+- No snapshots despite successful API calls
+- Device status is 'inactive' or 'error'
+
 ## Manual Testing Procedures
 
 ### Test Railway API Connectivity

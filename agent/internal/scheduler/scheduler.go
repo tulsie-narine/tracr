@@ -96,7 +96,9 @@ func (s *Scheduler) runCollection() {
 
 	// Ensure device is registered before collecting data
 	if s.config.DeviceID == "" || s.config.DeviceToken == "" {
-		logger.Info("Device not registered, attempting registration...", "device_id", s.config.DeviceID, "has_token", s.config.DeviceToken != "")
+		logger.Info("Device not registered, attempting registration...", 
+			"device_id", s.config.DeviceID, 
+			"has_token", s.config.DeviceToken != "")
 		if err := s.ensureRegistered(); err != nil {
 			logger.Error("Registration failed, will retry next cycle", "error", err)
 			return
@@ -123,9 +125,16 @@ func (s *Scheduler) runCollection() {
 	// Send to API if device is registered and online
 	if s.config.DeviceID != "" && s.config.DeviceToken != "" {
 		if err := s.client.SendInventory(s.config.DeviceID, snapshot); err != nil {
-			logger.Error("Failed to send inventory to API", "error", err)
+			logger.Error("Failed to send inventory to API", 
+				"error", err,
+				"device_id", s.config.DeviceID,
+				"api_endpoint", s.config.APIEndpoint,
+				"hint", "Check if device is registered in database or if credentials are valid")
 		} else {
-			logger.Info("Inventory sent successfully to API")
+			logger.Info("Inventory sent successfully to API",
+				"device_id", s.config.DeviceID,
+				"api_endpoint", s.config.APIEndpoint,
+				"timestamp", time.Now().Format(time.RFC3339))
 			
 			// Update last sync time
 			if err := s.storage.UpdateLastSyncTime(); err != nil {
@@ -200,6 +209,11 @@ func (s *Scheduler) ensureRegistered() error {
 	osVersion := fmt.Sprintf("%s %s", os.Caption, os.Version)
 	agentVersion := version.GetVersion()
 
+	logger.Info("Attempting device registration", 
+		"hostname", hostname, 
+		"os_version", osVersion,
+		"agent_version", agentVersion)
+
 	// Call registration API
 	resp, err := s.client.Register(hostname, osVersion, agentVersion)
 	if err != nil {
@@ -210,12 +224,16 @@ func (s *Scheduler) ensureRegistered() error {
 	s.config.DeviceID = resp.DeviceID
 	s.config.DeviceToken = resp.DeviceToken
 
+	logger.Info("Registration successful, received credentials", 
+		"device_id", resp.DeviceID, 
+		"token_prefix", resp.DeviceToken[:8])
+
 	logger.Info("Saving device credentials to config", "device_id", resp.DeviceID, "config_path", "C:\\ProgramData\\TracrAgent\\config.json")
 	if err := s.config.Save(); err != nil {
 		logger.Error("CRITICAL: Failed to save device credentials to config", "error", err, "device_id", resp.DeviceID)
 		return fmt.Errorf("failed to save device credentials to config: %w", err)
 	}
-	logger.Info("Device credentials saved successfully", "device_id", resp.DeviceID)
+	logger.Info("Device credentials saved successfully", "device_id", resp.DeviceID, "config_path", "C:\\ProgramData\\TracrAgent\\config.json")
 
 	logger.Info("Registration successful", "device_id", resp.DeviceID, "hostname", hostname)
 	return nil

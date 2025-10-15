@@ -8,6 +8,8 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/tracr/agent/internal/config"
@@ -163,7 +165,12 @@ func (c *Client) doRequestWithRetry(method, url string, requestBody interface{},
 		// Retry on network errors
 		if retriesLeft > 0 {
 			backoffDuration := c.calculateBackoff(c.config.MaxRetries - retriesLeft)
-			logger.Debug("Request failed, retrying", "error", err, "backoff", backoffDuration, "retriesLeft", retriesLeft-1)
+			logger.Error("Network request failed, retrying", 
+				"error", err, 
+				"url", url, 
+				"auth_required", requireAuth,
+				"backoff", backoffDuration, 
+				"retriesLeft", retriesLeft-1)
 			time.Sleep(backoffDuration)
 			return c.doRequestWithRetry(method, url, requestBody, responseBody, requireAuth, retriesLeft-1)
 		}
@@ -177,10 +184,20 @@ func (c *Client) doRequestWithRetry(method, url string, requestBody interface{},
 		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	logger.Debug("Received HTTP response", "status", resp.StatusCode, "size", len(respBody))
+	logger.Debug("Received HTTP response", "status", resp.StatusCode, "size", len(respBody), "body", string(respBody)[:min(500, len(respBody))])
 
 	// Handle HTTP errors
 	if resp.StatusCode >= 400 {
+		// Log detailed error information for client errors
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			logger.Error("Client error response", 
+				"status", resp.StatusCode, 
+				"url", url, 
+				"method", method,
+				"response_body", string(respBody),
+				"device_id", extractDeviceIDFromURL(url))
+		}
+		
 		// Retry on 5xx errors (server errors)
 		if resp.StatusCode >= 500 && retriesLeft > 0 {
 			backoffDuration := c.calculateBackoff(c.config.MaxRetries - retriesLeft)
@@ -200,6 +217,22 @@ func (c *Client) doRequestWithRetry(method, url string, requestBody interface{},
 	}
 
 	return nil
+}
+
+// extractDeviceIDFromURL extracts device ID from URL path for logging purposes
+func extractDeviceIDFromURL(urlStr string) string {
+	// Parse the URL to extract path
+	if parsedURL, err := url.Parse(urlStr); err == nil {
+		path := parsedURL.Path
+		// Look for /v1/devices/{device_id} pattern
+		if strings.Contains(path, "/v1/devices/") {
+			parts := strings.Split(path, "/")
+			if len(parts) >= 4 && parts[3] != "" {
+				return parts[3]
+			}
+		}
+	}
+	return "unknown"
 }
 
 func (c *Client) calculateBackoff(attempt int) time.Duration {

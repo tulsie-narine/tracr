@@ -2,6 +2,7 @@ package routes
 
 import (
 	"database/sql"
+	"log"
 	"strconv"
 	"time"
 
@@ -82,6 +83,9 @@ func (h *Handler) SubmitInventory(c *fiber.Ctx) error {
 		return ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
 	}
 
+	log.Printf("[INFO] Processing inventory submission: device_id=%s, hostname=%s, volumes=%d, software=%d, timestamp=%v", 
+		device.ID, device.Hostname, len(req.Volumes), len(req.Software), time.Now())
+
 	if err := ValidateStruct(req); err != nil {
 		return ValidationErrorResponse(c, err)
 	}
@@ -100,6 +104,8 @@ func (h *Handler) SubmitInventory(c *fiber.Ctx) error {
 
 	if existingSnapshot != nil {
 		// Duplicate snapshot, return existing ID
+		log.Printf("[INFO] Duplicate snapshot detected: device_id=%s, existing_snapshot_id=%s, collected_at=%v", 
+			device.ID, existingSnapshot.ID, existingSnapshot.CollectedAt)
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"snapshot_id": existingSnapshot.ID,
 			"message":     "Duplicate snapshot, no changes recorded",
@@ -140,6 +146,9 @@ func (h *Handler) SubmitInventory(c *fiber.Ctx) error {
 		return ErrorResponse(c, fiber.StatusInternalServerError, "Failed to create snapshot")
 	}
 
+	log.Printf("[INFO] Created new snapshot: snapshot_id=%s, hash=%s, collected_at=%v", 
+		snapshotID, snapshotHash, snapshot.CollectedAt)
+
 	// Insert volumes
 	if len(req.Volumes) > 0 {
 		if err := CreateVolumes(tx, snapshotID, req.Volumes); err != nil {
@@ -159,8 +168,13 @@ func (h *Handler) SubmitInventory(c *fiber.Ctx) error {
 		return ErrorResponse(c, fiber.StatusInternalServerError, "Failed to update device information")
 	}
 
+	log.Printf("[INFO] Updated device information: device_id=%s, hostname=%s, os_version=%s %s, last_seen=%v", 
+		device.ID, req.Identity.Hostname, req.OS.Caption, req.OS.Version, time.Now())
+
 	// Commit transaction
 	if err := tx.Commit(); err != nil {
+		log.Printf("[ERROR] Transaction commit failed: device_id=%s, hostname=%s, error=%v, hint=Check database constraints", 
+			device.ID, device.Hostname, err)
 		return ErrorResponse(c, fiber.StatusInternalServerError, "Failed to commit transaction")
 	}
 
@@ -512,11 +526,16 @@ func (h *Handler) ListDevices(c *fiber.Ctx) error {
 	search := c.Query("search")
 	status := c.Query("status")
 
+	log.Printf("[DEBUG] ListDevices request: page=%d, limit=%d, offset=%d, search='%s', status='%s'", 
+		page, limit, offset, search, status)
+
 	// Get devices with filters and pagination
 	devices, err := ListDevices(h.DB, offset, limit, search, status)
 	if err != nil {
 		return ErrorResponse(c, fiber.StatusInternalServerError, "Failed to retrieve devices")
 	}
+
+	log.Printf("[DEBUG] Retrieved %d devices from database", len(devices))
 
 	// Convert to DeviceListItem with computed fields
 	var deviceItems []models.DeviceListItem
@@ -547,6 +566,24 @@ func (h *Handler) ListDevices(c *fiber.Ctx) error {
 	}
 
 	totalPages := (total + limit - 1) / limit
+
+	log.Printf("[DEBUG] Total devices in database: %d, calculated total_pages: %d", total, totalPages)
+
+	// Log first few device hostnames for verification
+	hostnames := make([]string, 0, len(deviceItems))
+	for i, item := range deviceItems {
+		if i >= 3 { // Log up to 3 hostnames
+			break
+		}
+		hostnames = append(hostnames, item.Hostname)
+	}
+	log.Printf("[DEBUG] Returning devices to frontend: count=%d, hostnames=%v, pagination=%v", 
+		len(deviceItems), hostnames, fiber.Map{
+			"total":       total,
+			"page":        page,
+			"limit":       limit,
+			"total_pages": totalPages,
+		})
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"data": deviceItems,
