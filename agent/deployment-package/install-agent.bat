@@ -94,9 +94,11 @@ if not exist "C:\ProgramData\TracrAgent\config.json" (
     echo Creating default configuration file without BOM...
     powershell -Command "$config = @{'api_endpoint' = 'https://web-production-c4a4.up.railway.app'; 'collection_interval' = '15m'; 'jitter_percent' = 0.1; 'max_retries' = 5; 'backoff_multiplier' = 2.0; 'max_backoff_time' = '5m'; 'data_dir' = 'C:\ProgramData\TracrAgent\data'; 'snapshot_path' = 'C:\ProgramData\TracrAgent\data\snapshots'; 'log_level' = 'INFO'; 'log_dir' = 'C:\ProgramData\TracrAgent\logs'; 'request_timeout' = '30s'; 'heartbeat_interval' = '5m'; 'command_poll_interval' = '60s'}; $config | ConvertTo-Json | Out-File -FilePath 'C:\ProgramData\TracrAgent\config.json' -Encoding UTF8 -NoNewline"
     if %errorlevel% equ 0 (
-        echo SUCCESS: Configuration file created without BOM.
+        echo Validating configuration file...
+        powershell -Command "try { Get-Content 'C:\ProgramData\TracrAgent\config.json' -Raw | ConvertFrom-Json | Out-Null; Write-Host 'SUCCESS: Configuration file created and validated (no BOM).' } catch { Write-Host 'ERROR: Configuration validation failed:' $_.Exception.Message }" 
     ) else (
         echo WARNING: PowerShell config creation failed, using fallback method.
+        echo Note: Fallback method may create BOM that causes service startup issues.
         echo { > "C:\ProgramData\TracrAgent\config.json"
         echo   "api_endpoint": "https://web-production-c4a4.up.railway.app", >> "C:\ProgramData\TracrAgent\config.json"
         echo   "collection_interval": "15m", >> "C:\ProgramData\TracrAgent\config.json"
@@ -112,10 +114,13 @@ if not exist "C:\ProgramData\TracrAgent\config.json" (
         echo   "heartbeat_interval": "5m", >> "C:\ProgramData\TracrAgent\config.json"
         echo   "command_poll_interval": "60s" >> "C:\ProgramData\TracrAgent\config.json"
         echo } >> "C:\ProgramData\TracrAgent\config.json"
-        echo WARNING: Config created with potential BOM - run fix-config-bom.bat if service fails.
+        echo WARNING: Config created with potential BOM. If service fails to start,
+        echo          the issue is likely UTF-8 BOM in config.json file.
     )
 ) else (
     echo Configuration file already exists.
+    echo Checking for BOM issues in existing config...
+    powershell -Command "try { Get-Content 'C:\ProgramData\TracrAgent\config.json' -Raw | ConvertFrom-Json | Out-Null; Write-Host 'SUCCESS: Existing configuration is valid.' } catch { if ($_.Exception.Message -like '*invalid character*') { Write-Host 'WARNING: Existing config has BOM issues. Service may fail to start.' } else { Write-Host 'ERROR: Configuration validation failed:' $_.Exception.Message } }"
 )
 echo.
 
@@ -140,10 +145,25 @@ powershell -ExecutionPolicy Bypass -File "deploy-to-railway-clean.ps1"
 if %errorlevel% neq 0 (
     echo ERROR: Failed to configure agent. Check the PowerShell output above.
     echo.
-    echo If PowerShell syntax errors persist, try running the script directly:
-    echo   powershell -ExecutionPolicy Bypass -File "deploy-to-railway-clean.ps1"
-    pause
-    exit /b 1
+    echo Common solutions:
+    echo 1. If PowerShell syntax errors: Run deploy-to-railway-clean.ps1 directly
+    echo 2. If service fails to start: The issue is likely UTF-8 BOM in config.json
+    echo 3. For BOM issues: Delete config.json and rerun this installer
+    echo 4. Manual fix: Run fix-config-bom.bat (if available)
+    echo.
+    echo Attempting automatic BOM fix...
+    powershell -Command "$config = @{'api_endpoint' = 'https://web-production-c4a4.up.railway.app'; 'collection_interval' = '15m'; 'jitter_percent' = 0.1; 'max_retries' = 5; 'backoff_multiplier' = 2.0; 'max_backoff_time' = '5m'; 'data_dir' = 'C:\ProgramData\TracrAgent\data'; 'snapshot_path' = 'C:\ProgramData\TracrAgent\data\snapshots'; 'log_level' = 'INFO'; 'log_dir' = 'C:\ProgramData\TracrAgent\logs'; 'request_timeout' = '30s'; 'heartbeat_interval' = '5m'; 'command_poll_interval' = '60s'}; $config | ConvertTo-Json | Out-File -FilePath 'C:\ProgramData\TracrAgent\config.json' -Encoding UTF8 -NoNewline"
+    echo Attempting service restart...
+    sc stop TracrAgent >nul 2>&1
+    timeout /t 2 /nobreak >nul
+    sc start TracrAgent
+    if %errorlevel% equ 0 (
+        echo SUCCESS: BOM fix resolved the issue! Service started successfully.
+    ) else (
+        echo Still failed. Check Windows Event Log for detailed error messages.
+        pause
+        exit /b 1
+    )
 )
 echo SUCCESS: Agent configured for Railway.
 echo.
