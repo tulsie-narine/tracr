@@ -51,8 +51,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 # Set user
 USER tracr
 
-# Define volume mount point
-VOLUME ["/data"]
-
 # Set entrypoint
 ENTRYPOINT ["/tracr-api"]
