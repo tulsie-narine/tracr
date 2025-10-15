@@ -19,7 +19,8 @@ RUN go mod download
 COPY api/ ./
 
 # Build the binary with CGO enabled (required for SQLite)
-RUN CGO_ENABLED=1 go build -o tracr-api -ldflags="-s -w" main.go
+# Add CGO flags for Alpine Linux compatibility with SQLite
+RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" go build -o tracr-api -ldflags="-s -w" main.go
 
 # Stage 2: Runtime
 FROM alpine:latest
