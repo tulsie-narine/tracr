@@ -151,27 +151,85 @@ if %errorlevel% neq 0 (
     echo 3. For BOM issues: Delete config.json and rerun this installer
     echo 4. Manual fix: Run fix-config-bom.bat (if available)
     echo.
-    echo Attempting automatic BOM fix...
-    echo Removing existing config file with BOM...
+    echo Attempting automatic BOM fix with enhanced retry logic...
+    echo Stopping service completely...
+    sc stop TracrAgent >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    
+    echo Removing config file with potential BOM...
     del "C:\ProgramData\TracrAgent\config.json" >nul 2>&1
+    timeout /t 1 /nobreak >nul
+    
     echo Creating new clean config file...
     powershell -Command "$config = @{'api_endpoint' = 'https://web-production-c4a4.up.railway.app'; 'collection_interval' = '15m'; 'jitter_percent' = 0.1; 'max_retries' = 5; 'backoff_multiplier' = 2.0; 'max_backoff_time' = '5m'; 'data_dir' = 'C:\ProgramData\TracrAgent\data'; 'snapshot_path' = 'C:\ProgramData\TracrAgent\data\snapshots'; 'log_level' = 'INFO'; 'log_dir' = 'C:\ProgramData\TracrAgent\logs'; 'request_timeout' = '30s'; 'heartbeat_interval' = '5m'; 'command_poll_interval' = '60s'}; $config | ConvertTo-Json | Out-File -FilePath 'C:\ProgramData\TracrAgent\config.json' -Encoding UTF8 -NoNewline"
-    echo Attempting service restart...
-    sc stop TracrAgent >nul 2>&1
-    timeout /t 2 /nobreak >nul
-    sc start TracrAgent
+    
+    echo Attempting service restart with retry logic...
+    set retry_count=0
+    :retry_service_start
+    set /a retry_count+=1
+    echo Attempt %retry_count%: Starting service...
+    sc start TracrAgent >nul 2>&1
     if %errorlevel% equ 0 (
-        echo SUCCESS: BOM fix resolved the issue! Service started successfully.
+        echo Waiting for service to fully initialize...
+        timeout /t 3 /nobreak >nul
+        sc query TracrAgent | find "RUNNING" >nul
+        if %errorlevel% equ 0 (
+            echo SUCCESS: Service started and running successfully!
+            goto service_started
+        ) else (
+            echo Service started but not yet running, waiting longer...
+            timeout /t 5 /nobreak >nul
+            sc query TracrAgent | find "RUNNING" >nul
+            if %errorlevel% equ 0 (
+                echo SUCCESS: Service is now running!
+                goto service_started
+            )
+        )
+    )
+    
+    if %retry_count% lss 3 (
+        echo Retry %retry_count% failed, waiting and trying again...
+        timeout /t 3 /nobreak >nul
+        goto retry_service_start
     ) else (
-        echo Still failed. Check Windows Event Log for detailed error messages.
+        echo ERROR: Failed to start service after 3 attempts.
+        echo Checking Windows Event Log for detailed errors...
+        powershell -Command "Get-EventLog -LogName Application -Source 'TracrAgent' -Newest 3 -ErrorAction SilentlyContinue | Format-Table -Wrap"
+        echo.
+        echo Manual troubleshooting options:
+        echo 1. Run troubleshoot-service.bat for detailed diagnosis
+        echo 2. Check Event Viewer ^> Windows Logs ^> Application
+        echo 3. Manually run: sc start TracrAgent
         pause
         exit /b 1
     )
+    :service_started
 )
 echo SUCCESS: Agent configured for Railway.
 echo.
 
-echo Step 8: Verifying Installation...
+echo Step 8: Final Service Verification...
+echo Checking service status one more time...
+sc query TracrAgent | find "RUNNING" >nul
+if %errorlevel% equ 0 (
+    echo SUCCESS: Service is confirmed running!
+) else (
+    echo WARNING: Service may not be running properly.
+    echo Attempting final restart...
+    sc stop TracrAgent >nul 2>&1
+    timeout /t 3 /nobreak >nul
+    sc start TracrAgent >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    sc query TracrAgent | find "RUNNING" >nul
+    if %errorlevel% equ 0 (
+        echo SUCCESS: Final restart worked!
+    ) else (
+        echo ERROR: Service still not running. Manual intervention required.
+    )
+)
+echo.
+
+echo Step 9: Running Connection Verification...
 powershell -ExecutionPolicy Bypass -File "verify-railway-connection-clean.ps1"
 echo.
 
