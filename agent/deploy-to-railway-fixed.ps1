@@ -166,5 +166,3 @@ Write-Host "4. Login with: admin / admin123" -ForegroundColor Yellow
 
 Write-Host ""
 Write-Host "Deployment completed successfully!" -ForegroundColor Green
-
-Write-Host "`nDeployment completed successfully!" -ForegroundColor Green
