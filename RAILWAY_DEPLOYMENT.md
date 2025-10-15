@@ -160,6 +160,60 @@ Set system environment variable:
 Restart-Service TracrAgent
 ```
 
+### Method 4: System Tray Testing (Recommended for Initial Setup)
+
+Use system tray mode to test configuration before installing as service:
+
+1. **Extract Deployment Package**:
+   - Download agent deployment package
+   - Extract to temporary directory (e.g., `C:\Temp\TracrAgent`)
+
+2. **Test with System Tray**:
+   ```cmd
+   # Navigate to extracted directory
+   cd C:\Temp\TracrAgent
+   
+   # Run tray version (no admin required for testing)
+   agent-tray.exe -tray
+   
+   # Or use batch script
+   run-with-tray.bat
+   ```
+
+3. **Verify Registration**:
+   - Look for Tracr icon in system tray (bottom-right corner)
+   - Right-click icon and check status
+   - Wait 30 seconds for registration
+   - Status should show "✓ Registered"
+   - Device ID should appear in menu
+
+4. **Check Web Dashboard**:
+   - Open https://tracr-silk.vercel.app
+   - Login with admin / admin123
+   - Go to Devices page
+   - Verify device appears with hostname
+
+5. **Troubleshoot if Needed**:
+   - If not registered, click "Force Check-In"
+   - Use "Open Logs" to view error messages
+   - Use "Open Config" to verify API endpoint
+   - Fix issues before installing as service
+
+6. **Install as Service** (after successful testing):
+   ```cmd
+   # Stop tray version (Quit from menu or Ctrl+C)
+   # Install as Windows service  
+   agent.exe -install
+   agent.exe -start
+   ```
+
+**Benefits of Testing First:**
+- **Visual Feedback**: See registration status in real-time
+- **No Service Installation**: Test without system changes
+- **Easy Troubleshooting**: Direct access to logs and config
+- **Manual Control**: Force registration if needed
+- **Quick Verification**: Instant feedback on connectivity
+
 ## Agent Deployment Workflow
 
 ### Complete Step-by-Step Process

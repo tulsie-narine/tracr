@@ -113,6 +113,83 @@ agent.exe -stop
 agent.exe -version
 ```
 
+## Running Modes
+
+The Tracr Agent supports three different running modes:
+
+### 1. Windows Service Mode (Production)
+
+**Use for:** Production deployments, automatic startup, unattended operation
+
+- **Runs as:** SYSTEM account
+- **Starts:** Automatically on boot
+- **User interaction:** Not required
+- **Installation:** `agent.exe -install`
+- **Logs:** Windows Event Log + file logging
+
+```cmd
+# Install and start service
+agent.exe -install
+agent.exe -start
+
+# Service runs automatically on system startup
+```
+
+### 2. System Tray Mode (Testing/Troubleshooting)
+
+**Use for:** Testing registration, troubleshooting connectivity, visual feedback
+
+- **Runs as:** Current user
+- **Starts:** Manually when needed
+- **User interaction:** System tray icon with menu
+- **Installation:** Not required (portable)
+- **Logs:** File logging + visual status updates
+
+```cmd
+# Run with tray icon (requires agent-tray.exe)
+agent-tray.exe -tray
+
+# Or use service version with tray flag
+agent.exe -tray
+```
+
+**System Tray Features:**
+- **Status Display:** Shows registration status (✓ Registered / ✗ Not Registered)
+- **Device ID:** Shows first 8 characters of device identifier
+- **Last Check-in:** Shows time since last successful API communication
+- **Force Check-In:** Button to trigger immediate registration and data collection
+- **Open Logs:** Quick access to log directory in Explorer
+- **Open Config:** Opens configuration file in Notepad
+- **Quit:** Stops agent and exits
+
+### 3. Console Mode (Development)
+
+**Use for:** Development, debugging, detailed log output
+
+- **Runs as:** Current user
+- **Starts:** Manually from command prompt
+- **User interaction:** Command line interface
+- **Installation:** Not required
+- **Logs:** Console output + file logging
+
+```cmd
+# Run in console mode (shows detailed logs)
+agent.exe
+
+# Console output shows real-time log messages
+```
+
+**When to Use Each Mode:**
+
+| Scenario | Recommended Mode | Reason |
+|----------|------------------|---------|
+| Production deployment | Service Mode | Automatic startup, runs as SYSTEM |
+| Initial testing | System Tray Mode | Visual feedback, easy troubleshooting |
+| Registration troubleshooting | System Tray Mode | Real-time status, manual controls |
+| Development | Console Mode | Detailed logging, immediate feedback |
+| Connectivity testing | System Tray Mode | Visual confirmation, manual retry |
+| Long-term monitoring | Service Mode | Unattended operation, automatic restart |
+
 ## Configuration
 
 The agent uses a JSON configuration file located at:
@@ -348,14 +425,60 @@ To force the agent to register as a new device:
 
 ### System Tray Integration
 
-The system tray icon (when implemented) will show:
+The system tray provides a user-friendly interface for monitoring and controlling the Tracr Agent:
 
-- **Registration status**: "Registered" vs "Not Registered"
-- **Device ID**: For identification purposes
-- **Last check-in time**: Last successful API communication
-- **"Force Check-In" button**: Triggers immediate registration attempt
+#### Running with System Tray
 
-This is useful for testing connectivity and troubleshooting registration issues.
+```cmd
+# Using tray-specific build (recommended)
+agent-tray.exe -tray
+
+# Using service build with tray flag  
+agent.exe -tray
+
+# Using deployment script
+run-with-tray.bat
+```
+
+#### Tray Menu Items
+
+**Status Information (Updated every 5 seconds):**
+- **Status**: Shows "✓ Registered" or "✗ Not Registered"
+- **Device ID**: Shows first 8 characters of device identifier (e.g., "abc123de...")
+- **Last Check-in**: Shows time since last successful API communication (e.g., "2 minutes ago")
+
+**Interactive Controls:**
+- **Force Check-In**: Clears credentials and triggers immediate re-registration and data collection
+- **Open Logs**: Opens log directory (`C:\ProgramData\TracrAgent\logs`) in Windows Explorer
+- **Open Config**: Opens configuration file in Notepad for editing
+- **Quit**: Stops the agent and exits the tray application
+
+#### Use Cases for System Tray Mode
+
+**Testing Registration:**
+1. Run `agent-tray.exe -tray`
+2. Wait 30 seconds for registration
+3. Check tray menu shows "✓ Registered"
+4. Verify device appears in web dashboard
+
+**Troubleshooting Connectivity:**
+1. Right-click tray icon
+2. Select "Force Check-In"
+3. Watch status update in real-time
+4. Use "Open Logs" to view detailed error messages
+
+**Verifying Configuration:**
+1. Use "Open Config" to edit settings
+2. Save file and restart agent
+3. Monitor registration status
+4. Check "Last Check-in" time updates
+
+**Benefits:**
+- **Visual Feedback**: No need to check log files manually
+- **Manual Control**: Force registration without restarting service
+- **Quick Access**: Direct links to logs and configuration
+- **Real-time Updates**: Status refreshes every 5 seconds
+- **No Installation**: Runs without installing as Windows service
 
 ### Configuration Methods
 

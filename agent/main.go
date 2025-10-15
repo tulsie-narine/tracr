@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 
 	"github.com/tracr/agent/cmd"
+	"github.com/tracr/agent/internal/config"
 	"github.com/tracr/agent/internal/logger"
+	"github.com/tracr/agent/internal/scheduler"
 	"github.com/tracr/agent/pkg/version"
 	"golang.org/x/sys/windows/svc"
 )
@@ -20,6 +23,7 @@ func main() {
 		uninstallFlag = flag.Bool("uninstall", false, "uninstall the service")
 		startFlag   = flag.Bool("start", false, "start the service")
 		stopFlag    = flag.Bool("stop", false, "stop the service")
+		trayFlag    = flag.Bool("tray", false, "run with system tray icon")
 	)
 	flag.Parse()
 
@@ -67,6 +71,24 @@ func main() {
 			log.Fatalf("Failed to stop service: %v", err)
 		}
 		fmt.Println("Service stopped successfully")
+	case *trayFlag:
+		cfg, err := config.Load()
+		if err != nil {
+			log.Fatalf("Failed to load configuration: %v", err)
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		s := scheduler.New(cfg)
+		if err := s.Start(ctx); err != nil {
+			log.Fatalf("Failed to start scheduler: %v", err)
+		}
+		defer s.Stop()
+
+		fmt.Println("Starting Tracr Agent with system tray...")
+		fmt.Println("Look for Tracr icon in system tray (bottom-right corner)")
+		cmd.RunWithTray(s)
 	default:
 		// Run in console mode for development/testing
 		fmt.Println("Running in console mode. Use -install to install as service.")
