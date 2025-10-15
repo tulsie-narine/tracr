@@ -45,6 +45,39 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Mock agent registration endpoint
+app.post('/v1/agents/register', (req, res) => {
+  const { hostname, os_version, agent_version } = req.body;
+  
+  console.log(`[REGISTER] New agent registration: ${hostname} (${os_version}) - Agent v${agent_version}`);
+  
+  // Generate a mock device ID and token
+  const deviceId = `device-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+  const deviceToken = `token-${Math.random().toString(36).substring(2, 32)}`;
+  
+  res.json({
+    device_id: deviceId,
+    device_token: deviceToken
+  });
+});
+
+// Mock agent inventory endpoint
+app.post('/v1/agents/:deviceId/inventory', (req, res) => {
+  const { deviceId } = req.params;
+  console.log(`[INVENTORY] Received inventory from device: ${deviceId}`);
+  console.log('Inventory data:', JSON.stringify(req.body, null, 2));
+  
+  res.json({ success: true });
+});
+
+// Mock agent heartbeat endpoint
+app.post('/v1/agents/:deviceId/heartbeat', (req, res) => {
+  const { deviceId } = req.params;
+  console.log(`[HEARTBEAT] Received heartbeat from device: ${deviceId}`);
+  
+  res.json({ success: true });
+});
+
 // Mock devices stats
 app.get('/v1/devices/stats', (req, res) => {
   res.json({
