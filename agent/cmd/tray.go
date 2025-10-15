@@ -12,7 +12,7 @@ import (
 	"github.com/tracr/agent/internal/logger"
 )
 
-//go:embed assets/t-icon.ico
+//go:embed t-icon.ico
 var iconData []byte
 
 // Global variables for system tray

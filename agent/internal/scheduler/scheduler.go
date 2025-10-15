@@ -223,8 +223,8 @@ func (s *Scheduler) ensureRegistered() error {
 
 // ForceCheckIn triggers immediate data collection without changing device credentials
 func (s *Scheduler) ForceCheckIn() error {
-	s.logger.Info("Force check-in requested from system tray")
-	
+	logger.Info("Force check-in requested from system tray")
+
 	// Trigger immediate collection cycle
 	s.TriggerCollection()
 	return nil
