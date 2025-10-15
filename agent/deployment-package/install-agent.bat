@@ -59,7 +59,53 @@ if %errorlevel% neq 0 (
 echo SUCCESS: Agent executable copied to C:\Program Files\TracrAgent\
 echo.
 
-echo Step 4: Installing Agent Service...
+echo Step 4: Creating required directories...
+if not exist "C:\ProgramData\TracrAgent" (
+    mkdir "C:\ProgramData\TracrAgent"
+    echo SUCCESS: Created config directory: C:\ProgramData\TracrAgent
+) else (
+    echo Config directory already exists.
+)
+
+if not exist "C:\ProgramData\TracrAgent\data" (
+    mkdir "C:\ProgramData\TracrAgent\data"
+    echo SUCCESS: Created data directory: C:\ProgramData\TracrAgent\data
+) else (
+    echo Data directory already exists.
+)
+
+if not exist "C:\ProgramData\TracrAgent\logs" (
+    mkdir "C:\ProgramData\TracrAgent\logs"
+    echo SUCCESS: Created logs directory: C:\ProgramData\TracrAgent\logs
+) else (
+    echo Logs directory already exists.
+)
+echo.
+
+echo Step 5: Creating initial configuration...
+if not exist "C:\ProgramData\TracrAgent\config.json" (
+    echo Creating default configuration file...
+    echo { > "C:\ProgramData\TracrAgent\config.json"
+    echo   "api_endpoint": "https://web-production-c4a4.up.railway.app", >> "C:\ProgramData\TracrAgent\config.json"
+    echo   "collection_interval": "15m", >> "C:\ProgramData\TracrAgent\config.json"
+    echo   "jitter_percent": 0.1, >> "C:\ProgramData\TracrAgent\config.json"
+    echo   "max_retries": 5, >> "C:\ProgramData\TracrAgent\config.json"
+    echo   "backoff_multiplier": 2.0, >> "C:\ProgramData\TracrAgent\config.json"
+    echo   "max_backoff_time": "5m", >> "C:\ProgramData\TracrAgent\config.json"
+    echo   "data_dir": "C:\\ProgramData\\TracrAgent\\data", >> "C:\ProgramData\TracrAgent\config.json"
+    echo   "log_level": "INFO", >> "C:\ProgramData\TracrAgent\config.json"
+    echo   "log_dir": "C:\\ProgramData\\TracrAgent\\logs", >> "C:\ProgramData\TracrAgent\config.json"
+    echo   "request_timeout": "30s", >> "C:\ProgramData\TracrAgent\config.json"
+    echo   "heartbeat_interval": "5m", >> "C:\ProgramData\TracrAgent\config.json"
+    echo   "command_poll_interval": "60s" >> "C:\ProgramData\TracrAgent\config.json"
+    echo } >> "C:\ProgramData\TracrAgent\config.json"
+    echo SUCCESS: Configuration file created.
+) else (
+    echo Configuration file already exists.
+)
+echo.
+
+echo Step 6: Installing Agent Service...
 "C:\Program Files\TracrAgent\agent.exe" -install
 if %errorlevel% neq 0 (
     echo ERROR: Failed to install agent service. Make sure you're running as Administrator.
@@ -75,7 +121,7 @@ if %errorlevel% neq 0 (
 echo SUCCESS: Agent service installed.
 echo.
 
-echo Step 5: Configuring for Railway...
+echo Step 7: Configuring for Railway...
 powershell -ExecutionPolicy Bypass -File "deploy-to-railway.ps1"
 if %errorlevel% neq 0 (
     echo ERROR: Failed to configure agent. Check the PowerShell output above.
@@ -85,7 +131,7 @@ if %errorlevel% neq 0 (
 echo SUCCESS: Agent configured for Railway.
 echo.
 
-echo Step 6: Verifying Installation...
+echo Step 8: Verifying Installation...
 powershell -ExecutionPolicy Bypass -File "verify-railway-connection.ps1"
 echo.
 

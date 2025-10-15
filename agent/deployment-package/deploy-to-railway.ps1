@@ -122,10 +122,23 @@ if ($service.Status -eq "Running") {
 # Start service
 try {
     Start-Service -Name $ServiceName -ErrorAction Stop
-    Write-Host "✓ Started agent service" -ForegroundColor Green
-} catch {
+    Write-Host "Success: Started agent service" -ForegroundColor Green
+}
+catch {
     Write-Host "ERROR: Failed to start service: $_" -ForegroundColor Red
-    Write-Host "Check Windows Event Log for details" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Troubleshooting steps:" -ForegroundColor Yellow
+    Write-Host "1. Run troubleshoot-service.bat for detailed diagnosis" -ForegroundColor Yellow
+    Write-Host "2. Check Windows Event Log (Application) for TracrAgent errors" -ForegroundColor Yellow
+    Write-Host "3. Verify all directories exist:" -ForegroundColor Yellow
+    Write-Host "   - C:\ProgramData\TracrAgent" -ForegroundColor Yellow
+    Write-Host "   - C:\ProgramData\TracrAgent\data" -ForegroundColor Yellow
+    Write-Host "   - C:\ProgramData\TracrAgent\logs" -ForegroundColor Yellow
+    Write-Host "4. Check config file: C:\ProgramData\TracrAgent\config.json" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "The service installation completed but failed to start." -ForegroundColor Cyan
+    Write-Host "This is often due to missing directories or configuration issues." -ForegroundColor Cyan
+    Write-Host "Run the updated install-agent.bat which now creates all required directories." -ForegroundColor Cyan
     exit 1
 }
 
