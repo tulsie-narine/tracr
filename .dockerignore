@@ -1,0 +1,35 @@
+# Exclude development files
+*.md
+.git/
+.gitignore
+*.log
+*.tmp
+
+# Exclude build artifacts
+api/tracr-api
+api/*.exe
+*.db
+*.db-shm
+*.db-wal
+
+# Exclude frontend and agent
+web/
+agent/
+node_modules/
+.next/
+
+# Exclude test files
+*_test.go
+test/
+
+# Exclude IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Exclude deployment files
+railway.json
+vercel.json
+netlify.toml
+fly.toml

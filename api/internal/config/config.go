@@ -14,7 +14,7 @@ type Config struct {
 	TLSKeyFile  string `json:"tls_key_file"`
 
 	// Database configuration
-	DatabaseURL string `json:"database_url"`
+	DatabasePath string `json:"database_path"`
 
 	// JWT configuration
 	JWTSecret string `json:"jwt_secret"`
@@ -58,10 +58,10 @@ func Load() (*Config, error) {
 	cfg.TLSCertFile = os.Getenv("TLS_CERT_FILE")
 	cfg.TLSKeyFile = os.Getenv("TLS_KEY_FILE")
 
-	cfg.DatabaseURL = os.Getenv("DATABASE_URL")
-	if cfg.DatabaseURL == "" {
+	cfg.DatabasePath = os.Getenv("DATABASE_PATH")
+	if cfg.DatabasePath == "" {
 		// Default for development
-		cfg.DatabaseURL = "postgres://tracr:tracr@localhost:5432/tracr?sslmode=disable"
+		cfg.DatabasePath = "./data/tracr.db"
 	}
 
 	cfg.JWTSecret = os.Getenv("JWT_SECRET")
@@ -120,8 +120,8 @@ func (c *Config) validate() error {
 		return fmt.Errorf("invalid port: %d", c.Port)
 	}
 
-	if c.DatabaseURL == "" {
-		return fmt.Errorf("database URL is required")
+	if c.DatabasePath == "" {
+		return fmt.Errorf("database path is required")
 	}
 
 	if c.JWTSecret == "" {

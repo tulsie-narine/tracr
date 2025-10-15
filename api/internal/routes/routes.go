@@ -21,6 +21,10 @@ func Setup(app *fiber.App, db *sqlx.DB, cfg *config.Config) {
 		Config: cfg,
 	}
 
+	// Public endpoints (no authentication)
+	app.Get("/", handler.Root)
+	app.Get("/health", handler.HealthCheck)
+
 	// Create v1/agents route group
 	agentGroup := app.Group("/v1/agents")
 

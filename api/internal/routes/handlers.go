@@ -9,6 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
 	"github.com/tracr/api/internal/models"
 )
@@ -1033,4 +1034,46 @@ func (h *Handler) DeleteDevice(c *fiber.Ctx) error {
 		"success": true,
 		"message": fmt.Sprintf("Device %s deleted successfully", device.Hostname),
 	})
+}
+// HealthCheck handles health check requests
+func (h *Handler) HealthCheck(c *fiber.Ctx) error {
+	// Check database connectivity
+	if err := CheckDatabaseHealth(h.DB); err != nil {
+		log.Printf("[ERROR] Health check failed: database unhealthy: %v", err)
+		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+			"status": "unhealthy",
+			"database": "disconnected",
+			"error": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status": "healthy",
+		"database": "connected",
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+	})
+}
+
+// Root handles root endpoint requests
+func (h *Handler) Root(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"service": "Tracr API",
+		"version": "1.0.0",
+		"status": "running",
+		"endpoints": []string{
+			"/health",
+			"/v1/agents/*",
+			"/v1/auth/*",
+			"/v1/devices/*",
+			"/v1/software",
+			"/v1/users/*",
+			"/v1/audit-logs",
+		},
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+	})
+}
+
+// CheckDatabaseHealth verifies database connectivity
+func CheckDatabaseHealth(db *sqlx.DB) error {
+	return db.Ping()
 }

@@ -17,7 +17,7 @@ import (
 // FindDeviceByHostname retrieves a device by its hostname
 func FindDeviceByHostname(db *sqlx.DB, hostname string) (*models.Device, error) {
 	var device models.Device
-	query := `SELECT * FROM devices WHERE hostname = $1`
+	query := `SELECT * FROM devices WHERE hostname = ?`
 	err := db.Get(&device, query, hostname)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func CreateDevice(db *sqlx.DB, device *models.Device) error {
 
 // UpdateDeviceLastSeen updates the last_seen timestamp for a device
 func UpdateDeviceLastSeen(db *sqlx.DB, deviceID uuid.UUID) error {
-	query := `UPDATE devices SET last_seen = NOW(), status = 'active' WHERE id = $1`
+	query := `UPDATE devices SET last_seen = datetime('now'), status = 'active' WHERE id = ?`
 	_, err := db.Exec(query, deviceID)
 	return err
 }
@@ -53,16 +53,16 @@ func UpdateDeviceLastSeen(db *sqlx.DB, deviceID uuid.UUID) error {
 func UpdateDeviceFromInventory(tx *sqlx.Tx, deviceID uuid.UUID, inventory *models.InventorySubmission) error {
 	query := `
 		UPDATE devices SET
-			hostname = $2,
-			domain = $3,
-			manufacturer = $4,
-			model = $5,
-			serial_number = $6,
-			os_caption = $7,
-			os_version = $8,
-			os_build = $9,
-			last_seen = NOW()
-		WHERE id = $1`
+			hostname = ?,
+			domain = ?,
+			manufacturer = ?,
+			model = ?,
+			serial_number = ?,
+			os_caption = ?,
+			os_version = ?,
+			os_build = ?,
+			last_seen = datetime('now')
+		WHERE id = ?`
 	
 	_, err := tx.Exec(query,
 		deviceID,
@@ -80,7 +80,7 @@ func UpdateDeviceFromInventory(tx *sqlx.Tx, deviceID uuid.UUID, inventory *model
 
 // UpdateDeviceToken updates the device token hash and creation timestamp
 func UpdateDeviceToken(db *sqlx.DB, deviceID uuid.UUID, tokenHash string) error {
-	query := `UPDATE devices SET device_token_hash = $2, token_created_at = NOW() WHERE id = $1`
+	query := `UPDATE devices SET device_token_hash = ?, token_created_at = datetime('now') WHERE id = ?`
 	_, err := db.Exec(query, deviceID, tokenHash)
 	return err
 }
@@ -88,7 +88,7 @@ func UpdateDeviceToken(db *sqlx.DB, deviceID uuid.UUID, tokenHash string) error 
 // FindDeviceByID retrieves a device by its ID
 func FindDeviceByID(db *sqlx.DB, deviceID uuid.UUID) (*models.Device, error) {
 	var device models.Device
-	query := `SELECT * FROM devices WHERE id = $1`
+	query := `SELECT * FROM devices WHERE id = ?`
 	err := db.Get(&device, query, deviceID)
 	if err != nil {
 		return nil, err
@@ -105,13 +105,13 @@ func ListDevices(db *sqlx.DB, offset, limit int, search, status string) ([]model
 
 	// Build dynamic WHERE clause
 	if search != "" {
-		whereClauses = append(whereClauses, "hostname ILIKE '%' || $"+strconv.Itoa(argCount) + " || '%'")
+		whereClauses = append(whereClauses, "hostname LIKE '%' || ?"+strconv.Itoa(argCount) + " || '%'")
 		args = append(args, search)
 		argCount++
 	}
 
 	if status != "" {
-		whereClauses = append(whereClauses, "status = $"+strconv.Itoa(argCount))
+		whereClauses = append(whereClauses, "status = ?"+strconv.Itoa(argCount))
 		args = append(args, status)
 		argCount++
 	}
@@ -121,7 +121,7 @@ func ListDevices(db *sqlx.DB, offset, limit int, search, status string) ([]model
 		whereClause = " WHERE " + strings.Join(whereClauses, " AND ")
 	}
 
-	query := "SELECT * FROM devices" + whereClause + " ORDER BY last_seen DESC LIMIT $" + strconv.Itoa(argCount) + " OFFSET $" + strconv.Itoa(argCount+1)
+	query := "SELECT * FROM devices" + whereClause + " ORDER BY last_seen DESC LIMIT ?" + strconv.Itoa(argCount) + " OFFSET ?" + strconv.Itoa(argCount+1)
 	args = append(args, limit, offset)
 
 	err := db.Select(&devices, query, args...)
@@ -146,13 +146,13 @@ func CountDevices(db *sqlx.DB, search, status string) (int, error) {
 
 	// Build same dynamic WHERE clause as ListDevices
 	if search != "" {
-		whereClauses = append(whereClauses, "hostname ILIKE '%' || $"+strconv.Itoa(argCount) + " || '%'")
+		whereClauses = append(whereClauses, "hostname LIKE '%' || ?"+strconv.Itoa(argCount) + " || '%'")
 		args = append(args, search)
 		argCount++
 	}
 
 	if status != "" {
-		whereClauses = append(whereClauses, "status = $"+strconv.Itoa(argCount))
+		whereClauses = append(whereClauses, "status = ?"+strconv.Itoa(argCount))
 		args = append(args, status)
 		argCount++
 	}
@@ -172,7 +172,7 @@ func CountDevices(db *sqlx.DB, search, status string) (int, error) {
 // FindSnapshotByHash retrieves a snapshot by device ID and hash
 func FindSnapshotByHash(db *sqlx.DB, deviceID uuid.UUID, hash string) (*models.Snapshot, error) {
 	var snapshot models.Snapshot
-	query := `SELECT * FROM snapshots WHERE device_id = $1 AND snapshot_hash = $2`
+	query := `SELECT * FROM snapshots WHERE device_id = ? AND snapshot_hash = ?`
 	err := db.Get(&snapshot, query, deviceID, hash)
 	if err != nil {
 		return nil, err
@@ -182,31 +182,20 @@ func FindSnapshotByHash(db *sqlx.DB, deviceID uuid.UUID, hash string) (*models.S
 
 // CreateSnapshot inserts a new snapshot and returns the generated ID
 func CreateSnapshot(tx *sqlx.Tx, snapshot *models.Snapshot) (uuid.UUID, error) {
-	query := `
-		INSERT INTO snapshots (
-			id, device_id, collected_at, agent_version, snapshot_hash,
-			cpu_percent, memory_used_bytes, memory_total_bytes,
-			boot_time, last_interactive_user
-		) VALUES (
-			:id, :device_id, :collected_at, :agent_version, :snapshot_hash,
-			:cpu_percent, :memory_used_bytes, :memory_total_bytes,
-			:boot_time, :last_interactive_user
-		) RETURNING id`
-	
-	rows, err := tx.NamedQuery(query, snapshot)
-	if err != nil {
-		return uuid.Nil, err
-	}
-	defer rows.Close()
-	
-	var id uuid.UUID
-	if rows.Next() {
-		err = rows.Scan(&id)
-	}
-	return id, err
-}
+        query := `
+                INSERT INTO snapshots (
+                        id, device_id, collected_at, agent_version, snapshot_hash,
+                        cpu_percent, memory_used_bytes, memory_total_bytes,
+                        boot_time, last_interactive_user
+                ) VALUES (
+                        :id, :device_id, :collected_at, :agent_version, :snapshot_hash,
+                        :cpu_percent, :memory_used_bytes, :memory_total_bytes,
+                        :boot_time, :last_interactive_user
+                )`
 
-// CreateVolumes batch inserts volumes for a snapshot
+        _, err := tx.NamedExec(query, snapshot)
+        return snapshot.ID, err
+}// CreateVolumes batch inserts volumes for a snapshot
 func CreateVolumes(tx *sqlx.Tx, snapshotID uuid.UUID, volumes []models.Volume) error {
 	if len(volumes) == 0 {
 		return nil
@@ -252,7 +241,7 @@ func GetLatestSnapshotSummary(db *sqlx.DB, deviceID uuid.UUID) (*models.Snapshot
 	query := `
 		SELECT id, collected_at, cpu_percent, memory_used_bytes, memory_total_bytes, boot_time
 		FROM snapshots 
-		WHERE device_id = $1 
+		WHERE device_id = ? 
 		ORDER BY collected_at DESC 
 		LIMIT 1`
 	
@@ -269,7 +258,7 @@ func GetLatestSnapshotSummary(db *sqlx.DB, deviceID uuid.UUID) (*models.Snapshot
 // FindSnapshotByID retrieves a snapshot by its ID
 func FindSnapshotByID(db *sqlx.DB, snapshotID uuid.UUID) (*models.Snapshot, error) {
 	var snapshot models.Snapshot
-	query := `SELECT * FROM snapshots WHERE id = $1`
+	query := `SELECT * FROM snapshots WHERE id = ?`
 	err := db.Get(&snapshot, query, snapshotID)
 	if err != nil {
 		return nil, err
@@ -283,9 +272,9 @@ func ListSnapshotsByDevice(db *sqlx.DB, deviceID uuid.UUID, offset, limit int) (
 	query := `
 		SELECT id, collected_at, cpu_percent, memory_used_bytes, memory_total_bytes, boot_time
 		FROM snapshots 
-		WHERE device_id = $1 
+		WHERE device_id = ? 
 		ORDER BY collected_at DESC 
-		LIMIT $2 OFFSET $3`
+		LIMIT ? OFFSET ?`
 	
 	err := db.Select(&summaries, query, deviceID, limit, offset)
 	if err != nil {
@@ -303,7 +292,7 @@ func ListSnapshotsByDevice(db *sqlx.DB, deviceID uuid.UUID, offset, limit int) (
 // CountSnapshotsByDevice returns the number of snapshots for a device
 func CountSnapshotsByDevice(db *sqlx.DB, deviceID uuid.UUID) (int, error) {
 	var count int
-	query := `SELECT COUNT(*) FROM snapshots WHERE device_id = $1`
+	query := `SELECT COUNT(*) FROM snapshots WHERE device_id = ?`
 	err := db.Get(&count, query, deviceID)
 	return count, err
 }
@@ -311,7 +300,7 @@ func CountSnapshotsByDevice(db *sqlx.DB, deviceID uuid.UUID) (int, error) {
 // GetVolumesBySnapshot retrieves volumes for a snapshot
 func GetVolumesBySnapshot(db *sqlx.DB, snapshotID uuid.UUID) ([]models.Volume, error) {
 	var volumes []models.Volume
-	query := `SELECT * FROM volumes WHERE snapshot_id = $1 ORDER BY name ASC`
+	query := `SELECT * FROM volumes WHERE snapshot_id = ? ORDER BY name ASC`
 	
 	err := db.Select(&volumes, query, snapshotID)
 	if err != nil {
@@ -329,7 +318,7 @@ func GetVolumesBySnapshot(db *sqlx.DB, snapshotID uuid.UUID) ([]models.Volume, e
 // GetSoftwareBySnapshot retrieves software items for a snapshot
 func GetSoftwareBySnapshot(db *sqlx.DB, snapshotID uuid.UUID) ([]models.Software, error) {
 	var software []models.Software
-	query := `SELECT * FROM software_items WHERE snapshot_id = $1 ORDER BY name ASC`
+	query := `SELECT * FROM software_items WHERE snapshot_id = ? ORDER BY name ASC`
 	
 	err := db.Select(&software, query, snapshotID)
 	if err != nil {
@@ -362,16 +351,16 @@ func ListCommandsByDevice(db *sqlx.DB, deviceID uuid.UUID, offset, limit int, st
 	var args []interface{}
 	argCount := 2
 
-	whereClause := "WHERE device_id = $1"
+	whereClause := "WHERE device_id = ?"
 	args = append(args, deviceID)
 
 	if status != "" {
 		argCount++
-		whereClause += " AND status = $" + strconv.Itoa(argCount)
+		whereClause += " AND status = ?" + strconv.Itoa(argCount)
 		args = append(args, status)
 	}
 
-	query := "SELECT * FROM commands " + whereClause + " ORDER BY created_at DESC LIMIT $" + strconv.Itoa(argCount+1) + " OFFSET $" + strconv.Itoa(argCount+2)
+	query := "SELECT * FROM commands " + whereClause + " ORDER BY created_at DESC LIMIT ?" + strconv.Itoa(argCount+1) + " OFFSET ?" + strconv.Itoa(argCount+2)
 	args = append(args, limit, offset)
 
 	err := db.Select(&commands, query, args...)
@@ -393,12 +382,12 @@ func CountCommandsByDevice(db *sqlx.DB, deviceID uuid.UUID, status string) (int,
 	var args []interface{}
 	argCount := 1
 
-	whereClause := "WHERE device_id = $1"
+	whereClause := "WHERE device_id = ?"
 	args = append(args, deviceID)
 
 	if status != "" {
 		argCount++
-		whereClause += " AND status = $" + strconv.Itoa(argCount)
+		whereClause += " AND status = ?" + strconv.Itoa(argCount)
 		args = append(args, status)
 	}
 
@@ -418,13 +407,13 @@ func ListSoftwareCatalog(db *sqlx.DB, offset, limit int, search, publisher, sort
 
 	// Build dynamic WHERE clause
 	if search != "" {
-		whereClauses = append(whereClauses, "si.name ILIKE '%' || $"+strconv.Itoa(argCount)+" || '%'")
+		whereClauses = append(whereClauses, "si.name LIKE '%' || ?"+strconv.Itoa(argCount)+" || '%'")
 		args = append(args, search)
 		argCount++
 	}
 
 	if publisher != "" {
-		whereClauses = append(whereClauses, "si.publisher = $"+strconv.Itoa(argCount))
+		whereClauses = append(whereClauses, "si.publisher = ?"+strconv.Itoa(argCount))
 		args = append(args, publisher)
 		argCount++
 	}
@@ -457,7 +446,7 @@ func ListSoftwareCatalog(db *sqlx.DB, offset, limit int, search, publisher, sort
 		whereClause +
 		` GROUP BY si.name, si.version, si.publisher
 		ORDER BY ` + orderBy +
-		` LIMIT $` + strconv.Itoa(argCount) + ` OFFSET $` + strconv.Itoa(argCount+1)
+		` LIMIT ?` + strconv.Itoa(argCount) + ` OFFSET ?` + strconv.Itoa(argCount+1)
 
 	args = append(args, limit, offset)
 
@@ -483,13 +472,13 @@ func CountSoftwareCatalog(db *sqlx.DB, search, publisher string) (int, error) {
 
 	// Build same dynamic WHERE clause as ListSoftwareCatalog
 	if search != "" {
-		whereClauses = append(whereClauses, "si.name ILIKE '%' || $"+strconv.Itoa(argCount)+" || '%'")
+		whereClauses = append(whereClauses, "si.name LIKE '%' || ?"+strconv.Itoa(argCount)+" || '%'")
 		args = append(args, search)
 		argCount++
 	}
 
 	if publisher != "" {
-		whereClauses = append(whereClauses, "si.publisher = $"+strconv.Itoa(argCount))
+		whereClauses = append(whereClauses, "si.publisher = ?"+strconv.Itoa(argCount))
 		args = append(args, publisher)
 		argCount++
 	}
@@ -523,31 +512,31 @@ func ListAuditLogs(db *sqlx.DB, offset, limit int, userID, deviceID *uuid.UUID, 
 
 	// Build dynamic WHERE clause
 	if userID != nil {
-		whereClauses = append(whereClauses, "al.user_id = $"+strconv.Itoa(argCount))
+		whereClauses = append(whereClauses, "al.user_id = ?"+strconv.Itoa(argCount))
 		args = append(args, *userID)
 		argCount++
 	}
 
 	if deviceID != nil {
-		whereClauses = append(whereClauses, "al.device_id = $"+strconv.Itoa(argCount))
+		whereClauses = append(whereClauses, "al.device_id = ?"+strconv.Itoa(argCount))
 		args = append(args, *deviceID)
 		argCount++
 	}
 
 	if action != "" {
-		whereClauses = append(whereClauses, "al.action = $"+strconv.Itoa(argCount))
+		whereClauses = append(whereClauses, "al.action = ?"+strconv.Itoa(argCount))
 		args = append(args, action)
 		argCount++
 	}
 
 	if startDate != nil {
-		whereClauses = append(whereClauses, "al.timestamp >= $"+strconv.Itoa(argCount))
+		whereClauses = append(whereClauses, "al.timestamp >= ?"+strconv.Itoa(argCount))
 		args = append(args, *startDate)
 		argCount++
 	}
 
 	if endDate != nil {
-		whereClauses = append(whereClauses, "al.timestamp <= $"+strconv.Itoa(argCount))
+		whereClauses = append(whereClauses, "al.timestamp <= ?"+strconv.Itoa(argCount))
 		args = append(args, *endDate)
 		argCount++
 	}
@@ -568,7 +557,7 @@ func ListAuditLogs(db *sqlx.DB, offset, limit int, userID, deviceID *uuid.UUID, 
 		LEFT JOIN devices d ON al.device_id = d.id` +
 		whereClause +
 		` ORDER BY al.timestamp DESC
-		LIMIT $` + strconv.Itoa(argCount) + ` OFFSET $` + strconv.Itoa(argCount+1)
+		LIMIT ?` + strconv.Itoa(argCount) + ` OFFSET ?` + strconv.Itoa(argCount+1)
 
 	args = append(args, limit, offset)
 
@@ -594,31 +583,31 @@ func CountAuditLogs(db *sqlx.DB, userID, deviceID *uuid.UUID, action string, sta
 
 	// Build same dynamic WHERE clause as ListAuditLogs
 	if userID != nil {
-		whereClauses = append(whereClauses, "user_id = $"+strconv.Itoa(argCount))
+		whereClauses = append(whereClauses, "user_id = ?"+strconv.Itoa(argCount))
 		args = append(args, *userID)
 		argCount++
 	}
 
 	if deviceID != nil {
-		whereClauses = append(whereClauses, "device_id = $"+strconv.Itoa(argCount))
+		whereClauses = append(whereClauses, "device_id = ?"+strconv.Itoa(argCount))
 		args = append(args, *deviceID)
 		argCount++
 	}
 
 	if action != "" {
-		whereClauses = append(whereClauses, "action = $"+strconv.Itoa(argCount))
+		whereClauses = append(whereClauses, "action = ?"+strconv.Itoa(argCount))
 		args = append(args, action)
 		argCount++
 	}
 
 	if startDate != nil {
-		whereClauses = append(whereClauses, "timestamp >= $"+strconv.Itoa(argCount))
+		whereClauses = append(whereClauses, "timestamp >= ?"+strconv.Itoa(argCount))
 		args = append(args, *startDate)
 		argCount++
 	}
 
 	if endDate != nil {
-		whereClauses = append(whereClauses, "timestamp <= $"+strconv.Itoa(argCount))
+		whereClauses = append(whereClauses, "timestamp <= ?"+strconv.Itoa(argCount))
 		args = append(args, *endDate)
 		argCount++
 	}
@@ -650,7 +639,7 @@ func GetPendingCommands(db *sqlx.DB, deviceID uuid.UUID) ([]models.Command, erro
 	var commands []models.Command
 	query := `
 		SELECT * FROM commands 
-		WHERE device_id = $1 AND status IN ('queued', 'in_progress')
+		WHERE device_id = ? AND status IN ('queued', 'in_progress')
 		ORDER BY created_at ASC`
 	
 	err := db.Select(&commands, query, deviceID)
@@ -670,10 +659,10 @@ func GetPendingCommands(db *sqlx.DB, deviceID uuid.UUID) ([]models.Command, erro
 func UpdateCommandStatus(db *sqlx.DB, commandID uuid.UUID, status models.CommandStatus, result *models.CommandResult) error {
 	query := `
 		UPDATE commands SET
-			status = $2,
-			executed_at = NOW(),
-			result = $3
-		WHERE id = $1`
+			status = ?,
+			executed_at = datetime('now'),
+			result = ?
+		WHERE id = ?`
 	
 	var resJSON any
 	if result != nil {
@@ -688,8 +677,8 @@ func UpdateCommandStatus(db *sqlx.DB, commandID uuid.UUID, status models.Command
 func ExpireOldCommands(db *sqlx.DB, deviceID uuid.UUID, timeout time.Duration) error {
 	query := `
 		UPDATE commands SET status = 'expired'
-		WHERE device_id = $1 AND status IN ('queued','in_progress')
-		  AND created_at < NOW() - ($2 || ' minutes')::interval`
+		WHERE device_id = ? AND status IN ('queued','in_progress')
+		  AND created_at < datetime('now', '-' || ? || ' minutes')`
 	
 	_, err := db.Exec(query, deviceID, strconv.Itoa(int(timeout.Minutes())))
 	return err
@@ -698,7 +687,7 @@ func ExpireOldCommands(db *sqlx.DB, deviceID uuid.UUID, timeout time.Duration) e
 // ValidateCommandOwnership verifies that a command belongs to a specific device
 func ValidateCommandOwnership(db *sqlx.DB, commandID, deviceID uuid.UUID) (bool, error) {
 	var count int
-	query := `SELECT COUNT(*) FROM commands WHERE id = $1 AND device_id = $2`
+	query := `SELECT COUNT(*) FROM commands WHERE id = ? AND device_id = ?`
 	err := db.Get(&count, query, commandID, deviceID)
 	if err != nil {
 		return false, err
@@ -711,7 +700,7 @@ func ValidateCommandOwnership(db *sqlx.DB, commandID, deviceID uuid.UUID) (bool,
 // FindUserByUsername retrieves a user by username
 func FindUserByUsername(db *sqlx.DB, username string) (*models.User, error) {
 	var user models.User
-	query := `SELECT * FROM users WHERE username = $1`
+	query := `SELECT * FROM users WHERE username = ?`
 	err := db.Get(&user, query, username)
 	if err != nil {
 		return nil, err
@@ -722,7 +711,7 @@ func FindUserByUsername(db *sqlx.DB, username string) (*models.User, error) {
 // FindUserByID retrieves a user by ID
 func FindUserByID(db *sqlx.DB, userID uuid.UUID) (*models.User, error) {
 	var user models.User
-	query := `SELECT * FROM users WHERE id = $1`
+	query := `SELECT * FROM users WHERE id = ?`
 	err := db.Get(&user, query, userID)
 	if err != nil {
 		return nil, err
@@ -733,7 +722,7 @@ func FindUserByID(db *sqlx.DB, userID uuid.UUID) (*models.User, error) {
 // ListUsers retrieves users with pagination
 func ListUsers(db *sqlx.DB, offset, limit int) ([]models.User, error) {
 	var users []models.User
-	query := `SELECT * FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`
+	query := `SELECT * FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?`
 	
 	err := db.Select(&users, query, limit, offset)
 	if err != nil {
@@ -781,13 +770,13 @@ func UpdateUser(db *sqlx.DB, userID uuid.UUID, update *models.UserUpdate) error 
 	argCount := 1
 
 	if update.Password != nil {
-		setParts = append(setParts, "password_hash = $"+strconv.Itoa(argCount))
+		setParts = append(setParts, "password_hash = ?"+strconv.Itoa(argCount))
 		args = append(args, *update.Password)
 		argCount++
 	}
 
 	if update.Role != nil {
-		setParts = append(setParts, "role = $"+strconv.Itoa(argCount))
+		setParts = append(setParts, "role = ?"+strconv.Itoa(argCount))
 		args = append(args, string(*update.Role))
 		argCount++
 	}
@@ -796,9 +785,9 @@ func UpdateUser(db *sqlx.DB, userID uuid.UUID, update *models.UserUpdate) error 
 		return nil // No updates to make
 	}
 
-	setParts = append(setParts, "updated_at = NOW()")
+	setParts = append(setParts, "updated_at = datetime('now')")
 	
-	query := "UPDATE users SET " + strings.Join(setParts, ", ") + " WHERE id = $" + strconv.Itoa(argCount)
+	query := "UPDATE users SET " + strings.Join(setParts, ", ") + " WHERE id = ?" + strconv.Itoa(argCount)
 	args = append(args, userID)
 
 	_, err := db.Exec(query, args...)
@@ -807,13 +796,13 @@ func UpdateUser(db *sqlx.DB, userID uuid.UUID, update *models.UserUpdate) error 
 
 // DeleteUser removes a user from the database
 func DeleteUser(db *sqlx.DB, userID uuid.UUID) error {
-	query := `DELETE FROM users WHERE id = $1`
+	query := `DELETE FROM users WHERE id = ?`
 	_, err := db.Exec(query, userID)
 	return err
 }
 
 func DeleteDevice(db *sqlx.DB, deviceID uuid.UUID) error {
-	query := `DELETE FROM devices WHERE id = $1`
+	query := `DELETE FROM devices WHERE id = ?`
 	_, err := db.Exec(query, deviceID)
 	return err
 }

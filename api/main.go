@@ -27,16 +27,20 @@ func main() {
 	}
 
 	// Initialize database
-	db, err := database.Connect(cfg.DatabaseURL)
+	db, err := database.Connect(cfg.DatabasePath)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer db.Close()
 
+	log.Printf("✓ Database connected successfully: %s", cfg.DatabasePath)
+
 	// Run database migrations
 	if err := database.Migrate(db); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
+
+	log.Printf("✓ Database migrations completed successfully")
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
@@ -76,6 +80,14 @@ func main() {
 	// Register routes
 	routes.Setup(app, db, cfg)
 
+	log.Println("========================================")
+	log.Println("Tracr API Server Starting")
+	log.Printf("Database: %s", cfg.DatabasePath)
+	log.Printf("Port: %d", cfg.Port)
+	log.Printf("JWT Expiry: %s", cfg.JWTExpiry)
+	log.Printf("Rate Limiting: %v", cfg.RateLimitEnabled)
+	log.Println("========================================")
+
 	// Graceful shutdown
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -96,7 +108,10 @@ func main() {
 		}
 	} else {
 		listenAddr = fmt.Sprintf(":%d", cfg.Port)
-		log.Printf("Starting HTTP server on port %d (TLS not configured)", cfg.Port)
+		log.Printf("✓ Tracr API Server Ready")
+		log.Printf("Health check: http://localhost:%d/health", cfg.Port)
+		log.Printf("API root: http://localhost:%d/", cfg.Port)
+		log.Println("========================================")
 		if err := app.Listen(listenAddr); err != nil {
 			log.Fatalf("Failed to start HTTP server: %v", err)
 		}

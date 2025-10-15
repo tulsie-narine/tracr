@@ -5,20 +5,20 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var DB *sqlx.DB
 
-func Connect(databaseURL string) (*sqlx.DB, error) {
-	db, err := sqlx.Connect("postgres", databaseURL)
+func Connect(databasePath string) (*sqlx.DB, error) {
+	db, err := sqlx.Connect("sqlite3", databasePath+"?_journal_mode=WAL&_timeout=5000&_foreign_keys=on")
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// Configure connection pool
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
+	// SQLite connection pool: single writer, WAL mode for better concurrency
+	db.SetMaxOpenConns(1) // SQLite handles one writer at a time
+	db.SetMaxIdleConns(1)
 	db.SetConnMaxLifetime(5 * time.Minute)
 
 	// Test connection

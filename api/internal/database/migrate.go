@@ -14,6 +14,14 @@ import (
 var migrationFiles embed.FS
 
 func Migrate(db *sqlx.DB) error {
+	// Enable SQLite pragmas for better performance and compatibility
+	if _, err := db.Exec("PRAGMA foreign_keys = ON;"); err != nil {
+		return fmt.Errorf("failed to enable foreign keys: %w", err)
+	}
+	if _, err := db.Exec("PRAGMA journal_mode = WAL;"); err != nil {
+		return fmt.Errorf("failed to set WAL mode: %w", err)
+	}
+
 	// Create schema_migrations table if it doesn't exist
 	if err := createMigrationsTable(db); err != nil {
 		return fmt.Errorf("failed to create migrations table: %w", err)
@@ -44,7 +52,7 @@ func Migrate(db *sqlx.DB) error {
 	// Apply pending migrations
 	for _, fileName := range migrationFileNames {
 		version := strings.TrimSuffix(fileName, ".sql")
-		
+
 		// Skip if already applied
 		if appliedMigrations[version] {
 			continue
@@ -63,11 +71,11 @@ func Migrate(db *sqlx.DB) error {
 func createMigrationsTable(db *sqlx.DB) error {
 	query := `
 		CREATE TABLE IF NOT EXISTS schema_migrations (
-			version VARCHAR(100) PRIMARY KEY,
-			applied_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+			version TEXT PRIMARY KEY,
+			applied_at TEXT NOT NULL DEFAULT (datetime('now'))
 		);
 	`
-	
+
 	_, err := db.Exec(query)
 	return err
 }
@@ -107,20 +115,31 @@ func applyMigration(db *sqlx.DB, fileName, version string) error {
 	}
 	defer tx.Rollback()
 
-	// Execute migration SQL
-	if _, err := tx.Exec(string(content)); err != nil {
-		return fmt.Errorf("failed to execute migration SQL: %w", err)
+	// Split SQL content by semicolons and execute each statement separately
+	// SQLite doesn't support multiple statements in one Exec call
+	sqlContent := string(content)
+	statements := strings.Split(sqlContent, ";")
+
+	for _, stmt := range statements {
+		stmt = strings.TrimSpace(stmt)
+		if stmt == "" {
+			continue // Skip empty statements
+		}
+
+		if _, err := tx.Exec(stmt); err != nil {
+			return fmt.Errorf("failed to execute migration SQL statement: %w\nStatement: %s", err, stmt)
+		}
 	}
 
 	// Record migration as applied (if not already done in the SQL)
-	checkQuery := "SELECT COUNT(*) FROM schema_migrations WHERE version = $1"
+	checkQuery := "SELECT COUNT(*) FROM schema_migrations WHERE version = ?"
 	var count int
 	if err := tx.Get(&count, checkQuery, version); err != nil {
 		return fmt.Errorf("failed to check migration status: %w", err)
 	}
 
 	if count == 0 {
-		insertQuery := "INSERT INTO schema_migrations (version) VALUES ($1)"
+		insertQuery := "INSERT INTO schema_migrations (version) VALUES (?)"
 		if _, err := tx.Exec(insertQuery, version); err != nil {
 			return fmt.Errorf("failed to record migration: %w", err)
 		}
