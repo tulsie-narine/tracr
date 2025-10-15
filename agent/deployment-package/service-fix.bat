@@ -20,23 +20,9 @@ if not exist "C:\ProgramData\TracrAgent\logs" (
 echo.
 
 echo Step 2: Creating proper configuration file...
-echo Creating config.json with all required fields...
-echo { > "C:\ProgramData\TracrAgent\config.json"
-echo   "api_endpoint": "https://web-production-c4a4.up.railway.app", >> "C:\ProgramData\TracrAgent\config.json"
-echo   "collection_interval": "15m", >> "C:\ProgramData\TracrAgent\config.json"
-echo   "jitter_percent": 0.1, >> "C:\ProgramData\TracrAgent\config.json"
-echo   "max_retries": 5, >> "C:\ProgramData\TracrAgent\config.json"
-echo   "backoff_multiplier": 2.0, >> "C:\ProgramData\TracrAgent\config.json"
-echo   "max_backoff_time": "5m", >> "C:\ProgramData\TracrAgent\config.json"
-echo   "data_dir": "C:\\ProgramData\\TracrAgent\\data", >> "C:\ProgramData\TracrAgent\config.json"
-echo   "snapshot_path": "C:\\ProgramData\\TracrAgent\\data\\snapshots", >> "C:\ProgramData\TracrAgent\config.json"
-echo   "log_level": "INFO", >> "C:\ProgramData\TracrAgent\config.json"
-echo   "log_dir": "C:\\ProgramData\\TracrAgent\\logs", >> "C:\ProgramData\TracrAgent\config.json"
-echo   "request_timeout": "30s", >> "C:\ProgramData\TracrAgent\config.json"
-echo   "heartbeat_interval": "5m", >> "C:\ProgramData\TracrAgent\config.json"
-echo   "command_poll_interval": "60s" >> "C:\ProgramData\TracrAgent\config.json"
-echo } >> "C:\ProgramData\TracrAgent\config.json"
-echo SUCCESS: Configuration file created.
+echo Creating config.json without BOM (this was the main problem)...
+powershell -Command "$config = @{'api_endpoint' = 'https://web-production-c4a4.up.railway.app'; 'collection_interval' = '15m'; 'jitter_percent' = 0.1; 'max_retries' = 5; 'backoff_multiplier' = 2.0; 'max_backoff_time' = '5m'; 'data_dir' = 'C:\ProgramData\TracrAgent\data'; 'snapshot_path' = 'C:\ProgramData\TracrAgent\data\snapshots'; 'log_level' = 'INFO'; 'log_dir' = 'C:\ProgramData\TracrAgent\logs'; 'request_timeout' = '30s'; 'heartbeat_interval' = '5m'; 'command_poll_interval' = '60s'}; $config | ConvertTo-Json | Out-File -FilePath 'C:\ProgramData\TracrAgent\config.json' -Encoding UTF8 -NoNewline"
+echo SUCCESS: Configuration file created without BOM.
 echo.
 
 echo Step 3: Testing agent executable directly...
