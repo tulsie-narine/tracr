@@ -16,7 +16,11 @@ if %errorlevel% equ 0 (
     timeout /t 3 /nobreak >nul
     
     echo Uninstalling existing service...
-    agent.exe -uninstall
+    if exist "C:\Program Files\TracrAgent\agent.exe" (
+        "C:\Program Files\TracrAgent\agent.exe" -uninstall >nul 2>&1
+    ) else (
+        agent.exe -uninstall >nul 2>&1
+    )
     if %errorlevel% neq 0 (
         echo WARNING: Failed to uninstall existing service. Trying alternative method...
         sc delete TracrAgent >nul 2>&1
@@ -31,8 +35,32 @@ if %errorlevel% equ 0 (
     echo.
 )
 
-echo Step 2: Installing Agent Service...
-agent.exe -install
+echo Step 2: Creating installation directory...
+if not exist "C:\Program Files\TracrAgent" (
+    mkdir "C:\Program Files\TracrAgent"
+    if %errorlevel% neq 0 (
+        echo ERROR: Failed to create installation directory. Make sure you're running as Administrator.
+        pause
+        exit /b 1
+    )
+    echo SUCCESS: Installation directory created.
+) else (
+    echo Installation directory already exists.
+)
+echo.
+
+echo Step 3: Copying agent executable...
+copy "agent.exe" "C:\Program Files\TracrAgent\agent.exe" >nul
+if %errorlevel% neq 0 (
+    echo ERROR: Failed to copy agent executable. Make sure you're running as Administrator.
+    pause
+    exit /b 1
+)
+echo SUCCESS: Agent executable copied to C:\Program Files\TracrAgent\
+echo.
+
+echo Step 4: Installing Agent Service...
+"C:\Program Files\TracrAgent\agent.exe" -install
 if %errorlevel% neq 0 (
     echo ERROR: Failed to install agent service. Make sure you're running as Administrator.
     echo.
@@ -47,7 +75,7 @@ if %errorlevel% neq 0 (
 echo SUCCESS: Agent service installed.
 echo.
 
-echo Step 3: Configuring for Railway...
+echo Step 5: Configuring for Railway...
 powershell -ExecutionPolicy Bypass -File "deploy-to-railway.ps1"
 if %errorlevel% neq 0 (
     echo ERROR: Failed to configure agent. Check the PowerShell output above.
@@ -57,7 +85,7 @@ if %errorlevel% neq 0 (
 echo SUCCESS: Agent configured for Railway.
 echo.
 
-echo Step 4: Verifying Installation...
+echo Step 6: Verifying Installation...
 powershell -ExecutionPolicy Bypass -File "verify-railway-connection.ps1"
 echo.
 
