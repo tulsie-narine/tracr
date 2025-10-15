@@ -36,9 +36,14 @@ func onReady() {
 	// Set tray icon and title
 	if len(iconData) > 0 {
 		systray.SetIcon(iconData)
+		logger.Info("System tray icon loaded successfully", "iconSize", len(iconData))
+	} else {
+		logger.Warn("System tray icon data is empty, using default icon")
 	}
 	systray.SetTitle("Tracr Agent")
 	systray.SetTooltip("Tracr Device Monitoring Agent")
+
+	logger.Info("Initializing system tray menu")
 
 	// Create menu structure
 	statusItem = systray.AddMenuItem("Status: Checking...", "Device registration status")
@@ -63,6 +68,8 @@ func onReady() {
 
 	quitItem := systray.AddMenuItem("Quit", "Stop agent and exit")
 
+	logger.Info("System tray menu created successfully")
+
 	// Start status update loop
 	go updateStatusLoop()
 
@@ -71,13 +78,16 @@ func onReady() {
 		for {
 			select {
 			case <-forceCheckInItem.ClickedCh:
+				logger.Info("Force Check-In menu item clicked")
 				go handleForceCheckIn()
 			case <-openLogsItem.ClickedCh:
+				logger.Info("Open Logs menu item clicked")
 				go handleOpenLogs()
 			case <-openConfigItem.ClickedCh:
+				logger.Info("Open Config menu item clicked")
 				go handleOpenConfig()
 			case <-quitItem.ClickedCh:
-				logger.Info("Quit requested from system tray")
+				logger.Info("Quit menu item clicked")
 				systray.Quit()
 				return
 			}
@@ -153,22 +163,40 @@ func handleForceCheckIn() {
 // handleOpenLogs opens the log directory in Windows Explorer
 func handleOpenLogs() {
 	logDir := "C:\\ProgramData\\TracrAgent\\logs"
+	logger.Info("Attempting to open log directory", "path", logDir)
+	
 	err := exec.Command("explorer", logDir).Start()
 	if err != nil {
 		logger.Error("Failed to open log directory", "error", err, "path", logDir)
+		// Try alternative method
+		err2 := exec.Command("cmd", "/c", "start", logDir).Run()
+		if err2 != nil {
+			logger.Error("Alternative method also failed", "error", err2)
+		} else {
+			logger.Info("Opened log directory using alternative method")
+		}
 	} else {
-		logger.Info("Opened log directory", "path", logDir)
+		logger.Info("Opened log directory successfully", "path", logDir)
 	}
 }
 
 // handleOpenConfig opens the configuration file in Notepad
 func handleOpenConfig() {
 	configFile := "C:\\ProgramData\\TracrAgent\\config.json"
+	logger.Info("Attempting to open config file", "path", configFile)
+	
 	err := exec.Command("notepad", configFile).Start()
 	if err != nil {
-		logger.Error("Failed to open config file", "error", err, "path", configFile)
+		logger.Error("Failed to open config file with notepad", "error", err, "path", configFile)
+		// Try alternative method
+		err2 := exec.Command("cmd", "/c", "start", configFile).Run()
+		if err2 != nil {
+			logger.Error("Alternative method also failed", "error", err2)
+		} else {
+			logger.Info("Opened config file using alternative method")
+		}
 	} else {
-		logger.Info("Opened config file", "path", configFile)
+		logger.Info("Opened config file successfully", "path", configFile)
 	}
 }
 
