@@ -193,15 +193,25 @@ if %errorlevel% neq 0 (
         goto retry_service_start
     ) else (
         echo ERROR: Failed to start service after 3 attempts.
-        echo Checking Windows Event Log for detailed errors...
-        powershell -Command "Get-EventLog -LogName Application -Source 'TracrAgent' -Newest 3 -ErrorAction SilentlyContinue | Format-Table -Wrap"
         echo.
-        echo Manual troubleshooting options:
-        echo 1. Run troubleshoot-service.bat for detailed diagnosis
-        echo 2. Check Event Viewer ^> Windows Logs ^> Application
-        echo 3. Manually run: sc start TracrAgent
-        pause
-        exit /b 1
+        echo Attempting FORCE START method...
+        echo Running force-start-agent.bat for aggressive service startup...
+        call force-start-agent.bat
+        if %errorlevel% equ 0 (
+            echo SUCCESS: Force start method worked!
+            goto service_started
+        ) else (
+            echo.
+            echo CRITICAL: Even force start failed. Manual intervention required.
+            echo.
+            echo Manual troubleshooting options:
+            echo 1. Run troubleshoot-service.bat for detailed diagnosis
+            echo 2. Check Event Viewer ^> Windows Logs ^> Application  
+            echo 3. Try force-start-agent.bat manually
+            echo 4. Contact support with Event Log details
+            pause
+            exit /b 1
+        )
     )
     :service_started
 )
@@ -224,7 +234,16 @@ if %errorlevel% equ 0 (
     if %errorlevel% equ 0 (
         echo SUCCESS: Final restart worked!
     ) else (
-        echo ERROR: Service still not running. Manual intervention required.
+        echo ERROR: Service still not running. Trying FORCE START as last resort...
+        call force-start-agent.bat
+        timeout /t 3 /nobreak >nul
+        sc query TracrAgent | find "RUNNING" >nul
+        if %errorlevel% equ 0 (
+            echo SUCCESS: Force start resolved the issue!
+        ) else (
+            echo CRITICAL ERROR: All methods failed. Service will not start.
+            echo Please run force-start-agent.bat manually and check Event Viewer.
+        )
     )
 )
 echo.
