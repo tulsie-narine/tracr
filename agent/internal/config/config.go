@@ -45,7 +45,7 @@ type Config struct {
 
 func DefaultConfig() *Config {
 	return &Config{
-		APIEndpoint:         "https://localhost:8443",
+		APIEndpoint:         "https://web-production-c4a4.up.railway.app",
 		CollectionInterval:  15 * time.Minute,
 		JitterPercent:       0.1,
 		MaxRetries:         5,
