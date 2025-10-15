@@ -1,13 +1,16 @@
 // Centralized environment configuration with validation
 
-// Check if we're in build mode
-const isBuildTime = typeof window === 'undefined' && !process.env.NEXT_PUBLIC_API_URL
+// Check if we're in build mode (prerendering/static generation)
+const isBuildTime = typeof window === 'undefined' && 
+  (process.env.NODE_ENV === 'production' || process.env.NEXT_PHASE === 'phase-production-build') &&
+  !process.env.NEXT_PUBLIC_API_URL
 
 function validateUrl(url: string | undefined, name: string): string {
   if (!url) {
-    // During build time (prerendering), provide a placeholder URL
-    if (isBuildTime) {
-      return 'https://api.placeholder.com'
+    // During build time (prerendering), provide a fallback URL
+    if (isBuildTime || typeof window === 'undefined') {
+      console.warn(`Missing ${name}, using fallback URL for build`)
+      return 'https://web-production-c4a4.up.railway.app'
     }
     throw new Error(`Missing required environment variable: ${name}`)
   }
@@ -22,8 +25,15 @@ function validateUrl(url: string | undefined, name: string): string {
     const parsedUrl = new URL(fullUrl)
     // Remove trailing slash
     return parsedUrl.toString().replace(/\/$/, '')
-  } catch {
-    throw new Error(`Invalid URL format for ${name}: ${url} (tried: ${fullUrl})`)
+  } catch (error) {
+    console.error(`URL validation failed:`, {
+      name,
+      originalUrl: url,
+      processedUrl: fullUrl,
+      isBuildTime,
+      error: error instanceof Error ? error.message : String(error)
+    })
+    throw new Error(`Invalid URL format for ${name}: ${url}`)
   }
 }
 
