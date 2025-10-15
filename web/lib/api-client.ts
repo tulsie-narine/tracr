@@ -197,7 +197,7 @@ export async function fetchDevices(
 
   const devicesJson = await response.json()
   return {
-    data: devicesJson.devices || [],
+    data: devicesJson.data || [],
     pagination: devicesJson.pagination || { total: 0, page: 1, limit, total_pages: 0 }
   }
 }
@@ -274,7 +274,7 @@ export async function fetchDeviceSnapshots(
 
     const snapshotsJson = await response.json()
     return {
-      data: snapshotsJson.snapshots || [],
+      data: snapshotsJson.data || [],
       pagination: snapshotsJson.pagination || { total: 0, page: 1, limit, total_pages: 0 }
     }
   } catch (error) {
@@ -337,7 +337,7 @@ export async function fetchDeviceCommands(
 
     const commandsJson = await response.json()
     return {
-      data: commandsJson.commands || [],
+      data: commandsJson.data || [],
       pagination: commandsJson.pagination || { total: 0, page: 1, limit, total_pages: 0 }
     }
   } catch (error) {
@@ -422,7 +422,7 @@ export async function fetchSoftwareCatalog(
 
     const softwareJson = await response.json()
     return {
-      data: softwareJson.software || [],
+      data: softwareJson.data || [],
       pagination: softwareJson.pagination || { total: 0, page: 1, limit, total_pages: 0 }
     }
   } catch (error) {
@@ -456,7 +456,7 @@ export async function fetchUsers(
 
     const json = await response.json()
     return {
-      data: json.users || [],
+      data: json.data || [],
       pagination: json.pagination || { total: 0, page: 1, limit, total_pages: 0 }
     }
   } catch (error) {
@@ -585,7 +585,7 @@ export async function fetchAuditLogs(
 
     const json = await response.json()
     return {
-      data: json.audit_logs || [],
+      data: json.data || [],
       pagination: json.pagination || { total: 0, page: 1, limit, total_pages: 0 }
     }
   } catch (error) {

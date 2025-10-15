@@ -331,7 +331,7 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 	totalPages := (total + limit - 1) / limit
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"users": users,
+		"data": users,
 		"pagination": fiber.Map{
 			"total":       total,
 			"page":        page,
@@ -549,7 +549,7 @@ func (h *Handler) ListDevices(c *fiber.Ctx) error {
 	totalPages := (total + limit - 1) / limit
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"devices": deviceItems,
+		"data": deviceItems,
 		"pagination": fiber.Map{
 			"total":       total,
 			"page":        page,
@@ -640,7 +640,7 @@ func (h *Handler) ListSnapshots(c *fiber.Ctx) error {
 	totalPages := (total + limit - 1) / limit
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"snapshots": snapshots,
+		"data": snapshots,
 		"pagination": fiber.Map{
 			"total":       total,
 			"page":        page,
@@ -804,7 +804,7 @@ func (h *Handler) ListDeviceCommands(c *fiber.Ctx) error {
 	totalPages := (total + limit - 1) / limit
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"commands": commands,
+		"data": commands,
 		"pagination": fiber.Map{
 			"total":       total,
 			"page":        page,
@@ -859,7 +859,7 @@ func (h *Handler) ListSoftwareCatalog(c *fiber.Ctx) error {
 	totalPages := (total + limit - 1) / limit
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"software": catalog,
+		"data": catalog,
 		"pagination": fiber.Map{
 			"total":       total,
 			"page":        page,
@@ -937,7 +937,7 @@ func (h *Handler) ListAuditLogs(c *fiber.Ctx) error {
 	totalPages := (total + limit - 1) / limit
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"audit_logs": auditLogs,
+		"data": auditLogs,
 		"pagination": fiber.Map{
 			"total":       total,
 			"page":        page,
