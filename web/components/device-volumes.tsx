@@ -23,7 +23,7 @@ import {
   CheckCircle,
   Folder
 } from 'lucide-react'
-import { fetchDeviceSnapshots } from '@/lib/api-client'
+import { fetchDeviceSnapshots, fetchDeviceDetail, fetchSnapshotDetail } from '@/lib/api-client'
 import { formatBytes, getVolumeStatusColor } from '@/lib/utils'
 import { Volume } from '@/types'
 
@@ -36,24 +36,19 @@ export default function DeviceVolumes({ deviceId }: DeviceVolumesProps) {
   const [sortBy, setSortBy] = useState('used_percent')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
+  const { data: device } = useSWR(['device', deviceId], () => fetchDeviceDetail(deviceId))
+  
   const { 
-    data: response, 
+    data: snapshot, 
     error, 
     isLoading 
   } = useSWR(
-    ['device-volumes', deviceId],
-    () => fetchDeviceSnapshots(deviceId, 1, 1), // Get latest snapshot with volume data
+    device?.latest_snapshot?.id ? ['snapshot', deviceId, device.latest_snapshot.id] : null,
+    () => fetchSnapshotDetail(deviceId, device!.latest_snapshot!.id),
     { refreshInterval: 60000 }
   )
 
-  const latestSnapshot = response?.data?.[0]
-  let volumes: Volume[] = []
-
-  // Extract volumes from latest snapshot  
-  if (latestSnapshot && 'volumes' in latestSnapshot) {
-    const snapshotWithVolumes = latestSnapshot as typeof latestSnapshot & { volumes?: Volume[] }
-    volumes = snapshotWithVolumes.volumes || []
-  }
+  const volumes: Volume[] = snapshot?.volumes || []
 
   // Filter and sort volumes
   const filteredVolumes = volumes

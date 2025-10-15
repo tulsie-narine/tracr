@@ -33,6 +33,7 @@ import {
 } from 'lucide-react'
 import { fetchDeviceSnapshots } from '@/lib/api-client'
 import { formatDistanceToNow, format } from 'date-fns'
+import { safeFormatDistanceToNow, safeFormatDate, isValidDate } from '@/lib/utils'
 import { formatBytes } from '@/lib/utils'
 
 interface DeviceSnapshotsProps {
@@ -191,14 +192,18 @@ export default function DeviceSnapshots({ deviceId }: DeviceSnapshotsProps) {
                     </TableCell>
                     
                     <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {formatDistanceToNow(new Date(snapshot.collected_at), { addSuffix: true })}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(snapshot.collected_at), 'PPpp')}
-                        </span>
-                      </div>
+                      {snapshot.collected_at && isValidDate(snapshot.collected_at) ? (
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {safeFormatDistanceToNow(snapshot.collected_at, { addSuffix: true })}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {safeFormatDate(snapshot.collected_at, 'PPpp')}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">Invalid date</span>
+                      )}
                     </TableCell>
                     
                     <TableCell>
@@ -231,11 +236,11 @@ export default function DeviceSnapshots({ deviceId }: DeviceSnapshotsProps) {
                     </TableCell>
                     
                     <TableCell>
-                      {snapshot.boot_time ? (
+                      {snapshot.boot_time && isValidDate(snapshot.boot_time) ? (
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            {formatDistanceToNow(new Date(snapshot.boot_time), { addSuffix: true })}
+                            {safeFormatDistanceToNow(snapshot.boot_time, { addSuffix: true })}
                           </span>
                         </div>
                       ) : (

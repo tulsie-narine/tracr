@@ -32,7 +32,7 @@ import {
 } from 'lucide-react'
 import { fetchDeviceSnapshots } from '@/lib/api-client'
 import { format } from 'date-fns'
-import { formatBytes } from '@/lib/utils'
+import { formatBytes, safeFormatDate, isValidDate } from '@/lib/utils'
 
 interface DevicePerformanceProps {
   deviceId: string
@@ -80,19 +80,28 @@ export default function DevicePerformance({ deviceId }: DevicePerformanceProps) 
   // Process data for charts
   const performanceData: PerformanceDataPoint[] = snapshots
     .filter(snapshot => 
-      snapshot.cpu_percent !== undefined || 
-      (snapshot.memory_used_bytes && snapshot.memory_total_bytes)
+      (snapshot.cpu_percent !== undefined || 
+      (snapshot.memory_used_bytes && snapshot.memory_total_bytes)) &&
+      isValidDate(snapshot.collected_at) // Filter out invalid dates
     )
-    .map(snapshot => ({
-      timestamp: snapshot.collected_at,
-      cpu_percent: snapshot.cpu_percent || 0,
-      memory_used_percent: snapshot.memory_used_bytes && snapshot.memory_total_bytes 
-        ? (snapshot.memory_used_bytes / snapshot.memory_total_bytes) * 100 
-        : 0,
-      memory_used_bytes: snapshot.memory_used_bytes || 0,
-      memory_total_bytes: snapshot.memory_total_bytes || 0,
-      formattedTime: format(new Date(snapshot.collected_at), 'HH:mm')
-    }))
+    .map(snapshot => {
+      try {
+        return {
+          timestamp: snapshot.collected_at,
+          cpu_percent: snapshot.cpu_percent || 0,
+          memory_used_percent: snapshot.memory_used_bytes && snapshot.memory_total_bytes 
+            ? (snapshot.memory_used_bytes / snapshot.memory_total_bytes) * 100 
+            : 0,
+          memory_used_bytes: snapshot.memory_used_bytes || 0,
+          memory_total_bytes: snapshot.memory_total_bytes || 0,
+          formattedTime: safeFormatDate(snapshot.collected_at, 'HH:mm', 'Invalid')
+        }
+      } catch {
+        // Skip invalid entries
+        return null
+      }
+    })
+    .filter((item): item is PerformanceDataPoint => item !== null) // Remove null entries with type guard
     .reverse() // Show oldest to newest for chart
 
   // Calculate averages and statistics

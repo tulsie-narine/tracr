@@ -29,7 +29,7 @@ import {
   Calendar,
   HardDrive
 } from 'lucide-react'
-import { fetchDeviceSnapshots } from '@/lib/api-client'
+import { fetchDeviceSnapshots, fetchDeviceDetail, fetchSnapshotDetail } from '@/lib/api-client'
 import { formatDistanceToNow, format } from 'date-fns'
 import { formatBytes } from '@/lib/utils'
 import { Software } from '@/types'
@@ -43,24 +43,19 @@ export default function DeviceSoftware({ deviceId }: DeviceSoftwareProps) {
   const [sortBy, setSortBy] = useState('name')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
+  const { data: device } = useSWR(['device', deviceId], () => fetchDeviceDetail(deviceId))
+  
   const { 
-    data: response, 
+    data: snapshot, 
     error, 
     isLoading 
   } = useSWR(
-    ['device-software', deviceId],
-    () => fetchDeviceSnapshots(deviceId, 1, 1), // Get latest snapshot with software data
+    device?.latest_snapshot?.id ? ['snapshot', deviceId, device.latest_snapshot.id] : null,
+    () => fetchSnapshotDetail(deviceId, device!.latest_snapshot!.id),
     { refreshInterval: 60000 }
   )
 
-  const latestSnapshot = response?.data?.[0]
-  let software: Software[] = []
-
-  // Extract software from latest snapshot
-  if (latestSnapshot && 'software' in latestSnapshot) {
-    const snapshotWithSoftware = latestSnapshot as typeof latestSnapshot & { software?: Software[] }
-    software = snapshotWithSoftware.software || []
-  }
+  const software: Software[] = snapshot?.software || []
 
   // Filter and sort software
   const filteredSoftware = software

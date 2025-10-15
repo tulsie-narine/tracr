@@ -17,6 +17,7 @@ import DeviceCommands from '@/components/device-commands'
 import DeviceStatusBadge from '@/components/device-status-badge'
 import { fetchDeviceDetail } from '@/lib/api-client'
 import { formatDistanceToNow } from 'date-fns'
+import { validateDeviceId } from '@/lib/utils'
 
 export default function DeviceDetailPage() {
   const params = useParams()
@@ -24,6 +25,46 @@ export default function DeviceDetailPage() {
   const deviceId = params.id as string
   
   const [selectedTab, setSelectedTab] = useState('overview')
+
+  // Validate device ID format
+  if (!validateDeviceId(deviceId)) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <main className="flex-1 space-y-4 p-8 pt-6">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => router.push('/devices')}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Devices
+            </Button>
+          </div>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center gap-4 text-center">
+                <AlertCircle className="h-12 w-12 text-red-500" />
+                <h3 className="text-lg font-semibold">Invalid Device ID Format</h3>
+                <p className="text-muted-foreground max-w-md">
+                  Device IDs must be valid UUIDs. The provided ID "{deviceId}" is not in the correct format.
+                </p>
+                <div className="flex gap-2">
+                  <Button onClick={() => router.push('/devices')}>
+                    Back to Device List
+                  </Button>
+                  <Button variant="outline" onClick={() => navigator.clipboard.writeText(deviceId)}>
+                    Copy Device ID
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    )
+  }
 
   const { 
     data: device, 
@@ -54,27 +95,57 @@ export default function DeviceDetailPage() {
   }
 
   if (error) {
+    let errorMessage = 'Failed to load device details'
+    let errorDescription = error.message || 'An unexpected error occurred'
+    
+    // Parse specific error types
+    if (error.message?.includes('400')) {
+      errorMessage = 'Invalid Device ID'
+      errorDescription = 'The device ID format is invalid. Device IDs must be valid UUIDs.'
+    } else if (error.message?.includes('404')) {
+      errorMessage = 'Device Not Found'
+      errorDescription = 'This device does not exist or may have been deleted.'
+    } else if (error.message?.includes('401')) {
+      errorMessage = 'Authentication Required'
+      errorDescription = 'Please log in again to access device details.'
+    } else if (error.message?.includes('500')) {
+      errorMessage = 'Server Error'
+      errorDescription = 'A server error occurred. Please try again later.'
+    }
+
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-md mx-auto">
           <CardHeader>
             <div className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-destructive" />
-              <CardTitle>Error Loading Device</CardTitle>
+              <CardTitle>{errorMessage}</CardTitle>
             </div>
             <CardDescription>
-              {error.message || 'Failed to load device details'}
+              {errorDescription}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button 
-              variant="outline" 
-              onClick={() => router.push('/devices')}
-              className="w-full"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Devices
-            </Button>
+          <CardContent className="space-y-3">
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => router.push('/devices')}
+                className="flex-1"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Devices
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigator.clipboard.writeText(deviceId)}
+                className="flex-1"
+              >
+                Copy Device ID
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Device ID: {deviceId}
+            </p>
           </CardContent>
         </Card>
       </div>

@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { format, formatDistanceToNow } from 'date-fns'
 import { DeviceStatus } from '@/types'
 
 export function cn(...inputs: ClassValue[]) {
@@ -82,4 +83,55 @@ export function getVolumeStatusColor(usedPercent: number): string {
   } else {
     return 'bg-red-500'
   }
+}
+
+// Safe date utilities
+export function isValidDate(dateString: string | null | undefined): boolean {
+  if (!dateString || typeof dateString !== 'string' || dateString.trim() === '') {
+    return false
+  }
+  
+  try {
+    const date = new Date(dateString)
+    return !isNaN(date.getTime())
+  } catch {
+    return false
+  }
+}
+
+export function safeFormatDate(
+  dateString: string | null | undefined, 
+  formatString: string, 
+  fallback: string = 'Unknown'
+): string {
+  if (!isValidDate(dateString)) {
+    return fallback
+  }
+  
+  try {
+    return format(new Date(dateString!), formatString)
+  } catch {
+    return fallback
+  }
+}
+
+export function safeFormatDistanceToNow(
+  dateString: string | null | undefined, 
+  options?: any, 
+  fallback: string = 'Unknown'
+): string {
+  if (!isValidDate(dateString)) {
+    return fallback
+  }
+  
+  try {
+    return formatDistanceToNow(new Date(dateString!), options)
+  } catch {
+    return fallback
+  }
+}
+
+export function validateDeviceId(deviceId: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  return uuidRegex.test(deviceId)
 }

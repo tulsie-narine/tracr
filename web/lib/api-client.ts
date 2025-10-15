@@ -192,10 +192,20 @@ export async function fetchDevices(
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch devices: ${response.statusText}`)
+    throw new Error(`Failed to fetch snapshots: ${response.statusText}`)
   }
 
-  return response.json()
+  const snapshotsJson = await response.json()
+  return {
+    data: snapshotsJson.snapshots || [],
+    pagination: snapshotsJson.pagination || { total: 0, page: 1, limit, total_pages: 0 }
+  }
+
+  const devicesJson = await response.json()
+  return {
+    data: devicesJson.devices || [],
+    pagination: devicesJson.pagination || { total: 0, page: 1, limit, total_pages: 0 }
+  }
 }
 
 // Fetch device statistics by getting all devices and calculating stats
@@ -327,7 +337,11 @@ export async function fetchDeviceCommands(
       throw new Error(`Failed to fetch device commands: ${response.statusText}`)
     }
 
-    return response.json()
+    const commandsJson = await response.json()
+    return {
+      data: commandsJson.commands || [],
+      pagination: commandsJson.pagination || { total: 0, page: 1, limit, total_pages: 0 }
+    }
   } catch (error) {
     console.error('Error fetching device commands:', error)
     throw error
@@ -408,7 +422,11 @@ export async function fetchSoftwareCatalog(
       throw new Error(`Failed to fetch software catalog: ${response.statusText}`)
     }
 
-    return response.json()
+    const softwareJson = await response.json()
+    return {
+      data: softwareJson.software || [],
+      pagination: softwareJson.pagination || { total: 0, page: 1, limit, total_pages: 0 }
+    }
   } catch (error) {
     console.error('Error fetching software catalog:', error)
     throw error

@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { DeviceListItem } from '@/types'
 import { formatDistanceToNow, format } from 'date-fns'
+import { safeFormatDistanceToNow, safeFormatDate, isValidDate } from '@/lib/utils'
 import { 
   Monitor, 
   HardDrive, 
@@ -97,13 +98,15 @@ export default function DeviceOverview({ device, isOnline }: DeviceOverviewProps
             </div>
           </div>
           
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Last Seen</p>
-            <p className="text-lg">{formatDistanceToNow(new Date(device.last_seen), { addSuffix: true })}</p>
-            <p className="text-sm text-muted-foreground">
-              {format(new Date(device.last_seen), 'PPpp')}
-            </p>
-          </div>
+          {device.last_seen && isValidDate(device.last_seen) && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Last Seen</p>
+              <p className="text-lg">{safeFormatDistanceToNow(device.last_seen, { addSuffix: true })}</p>
+              <p className="text-sm text-muted-foreground">
+                {safeFormatDate(device.last_seen, 'PPpp')}
+              </p>
+            </div>
+          )}
           
           {device.uptime_hours !== undefined && (
             <div>
@@ -128,18 +131,22 @@ export default function DeviceOverview({ device, isOnline }: DeviceOverviewProps
             <p className="text-sm font-mono bg-muted p-2 rounded">{device.id}</p>
           </div>
           
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">First Seen</p>
-            <p className="text-lg">{format(new Date(device.first_seen), 'PPP')}</p>
-            <p className="text-sm text-muted-foreground">
-              {formatDistanceToNow(new Date(device.first_seen), { addSuffix: true })}
-            </p>
-          </div>
+          {device.first_seen && isValidDate(device.first_seen) && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">First Seen</p>
+              <p className="text-lg">{safeFormatDate(device.first_seen, 'PPP')}</p>
+              <p className="text-sm text-muted-foreground">
+                {safeFormatDistanceToNow(device.first_seen, { addSuffix: true })}
+              </p>
+            </div>
+          )}
           
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Token Created</p>
-            <p className="text-lg">{format(new Date(device.token_created_at), 'PPP')}</p>
-          </div>
+          {device.token_created_at && isValidDate(device.token_created_at) && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Token Created</p>
+              <p className="text-lg">{safeFormatDate(device.token_created_at, 'PPP')}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -161,13 +168,15 @@ export default function DeviceOverview({ device, isOnline }: DeviceOverviewProps
               <p className="text-sm font-mono bg-muted p-2 rounded">{device.latest_snapshot.id}</p>
             </div>
             
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Collected At</p>
-              <p className="text-lg">{formatDistanceToNow(new Date(device.latest_snapshot.collected_at), { addSuffix: true })}</p>
-              <p className="text-sm text-muted-foreground">
-                {format(new Date(device.latest_snapshot.collected_at), 'PPpp')}
-              </p>
-            </div>
+            {device.latest_snapshot.collected_at && isValidDate(device.latest_snapshot.collected_at) && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Collected At</p>
+                <p className="text-lg">{safeFormatDistanceToNow(device.latest_snapshot.collected_at, { addSuffix: true })}</p>
+                <p className="text-sm text-muted-foreground">
+                  {safeFormatDate(device.latest_snapshot.collected_at, 'PPpp')}
+                </p>
+              </div>
+            )}
 
             {device.latest_snapshot.cpu_percent !== undefined && (
               <div>

@@ -382,6 +382,62 @@ After deployment, configure agents to point to production API URL:
 4. Follow Next.js App Router conventions
 5. Maintain type safety throughout the application
 
+## Troubleshooting Frontend Errors
+
+### "Application error: a client-side exception has occurred"
+
+**Cause:** Component crashed due to unexpected data or null values
+
+**Solutions:**
+- Check browser console (F12) for specific error message
+- Verify device ID is a valid UUID format
+- Check Network tab to see actual API response
+- Clear browser cache and localStorage
+- Verify API backend is running and accessible
+
+**Common causes:**
+- Invalid device ID format (must be UUID)
+- Missing or null date fields in API response  
+- Incomplete API response data
+
+### "Device not found" or 404 errors
+
+**Cause:** Device ID doesn't exist in database or is invalid format
+
+**Solutions:**
+- Verify device ID from device list page
+- Check that device was successfully registered by agent
+- Review agent logs for registration errors
+- Ensure agent is running and connecting to correct API endpoint
+
+### "Failed to fetch" or network errors
+
+**Cause:** API backend not accessible or CORS issues
+
+**Solutions:**
+- Verify `NEXT_PUBLIC_API_URL` environment variable is correct
+- Check that API backend is running (Railway deployment)
+- Verify CORS configuration on API backend
+- Check browser console for CORS error messages
+- Test API endpoint directly with curl
+
+### Empty data or "No data available" messages
+
+**Cause:** Agent hasn't sent data yet or data collection failed
+
+**Solutions:**
+- Check agent is running and registered successfully
+- Verify agent logs show successful inventory submission
+- Wait for next collection cycle (default 15 minutes)
+- Use "Force Check-In" from agent system tray (Windows)
+- Check API logs for incoming agent requests
+
+### Related Documentation
+
+- [Deployment Guide](DEPLOYMENT.md) - Frontend deployment instructions
+- [Agent Troubleshooting](../agent/TROUBLESHOOTING.md) - Agent connectivity issues
+- [Railway Deployment](../RAILWAY_DEPLOYMENT.md) - Backend API issues
+
 ## License
 
 This project is part of the Tracr device management system.

@@ -25,9 +25,9 @@ import { SnapshotSummary } from './snapshot'
 
 // Device with computed fields for list views
 export interface DeviceListItem extends Device {
-  latest_snapshot?: SnapshotSummary
+  latest_snapshot?: SnapshotSummary | null
   is_online: boolean
-  uptime_hours?: number
+  uptime_hours?: number | null
 }
 
 // Device registration request

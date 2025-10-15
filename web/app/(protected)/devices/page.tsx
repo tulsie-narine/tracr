@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { fetchDevices } from '@/lib/api-client'
 import { config } from '@/lib/env'
-import { formatUptime, formatPercentage } from '@/lib/utils'
+import { formatUptime, formatPercentage, safeFormatDistanceToNow } from '@/lib/utils'
 import { useDebounce } from '@/lib/hooks/use-debounce'
 import { DeviceStatus } from '@/types'
 import {
@@ -212,7 +212,7 @@ export default function DevicesPage() {
                       </div>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
-                      {formatDistanceToNow(new Date(device.last_seen), { addSuffix: true })}
+                      {device.last_seen ? safeFormatDistanceToNow(device.last_seen, { addSuffix: true }) : 'Unknown'}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
                       {device.uptime_hours !== undefined && device.uptime_hours !== null 
