@@ -96,7 +96,7 @@ func (s *Scheduler) runCollection() {
 
 	// Ensure device is registered before collecting data
 	if s.config.DeviceID == "" || s.config.DeviceToken == "" {
-		logger.Info("Device not registered, attempting registration...")
+		logger.Info("Device not registered, attempting registration...", "device_id", s.config.DeviceID, "has_token", s.config.DeviceToken != "")
 		if err := s.ensureRegistered(); err != nil {
 			logger.Error("Registration failed, will retry next cycle", "error", err)
 			return
@@ -210,9 +210,12 @@ func (s *Scheduler) ensureRegistered() error {
 	s.config.DeviceID = resp.DeviceID
 	s.config.DeviceToken = resp.DeviceToken
 
+	logger.Info("Saving device credentials to config", "device_id", resp.DeviceID, "config_path", "C:\\ProgramData\\TracrAgent\\config.json")
 	if err := s.config.Save(); err != nil {
+		logger.Error("CRITICAL: Failed to save device credentials to config", "error", err, "device_id", resp.DeviceID)
 		return fmt.Errorf("failed to save device credentials to config: %w", err)
 	}
+	logger.Info("Device credentials saved successfully", "device_id", resp.DeviceID)
 
 	logger.Info("Registration successful", "device_id", resp.DeviceID, "hostname", hostname)
 	return nil
