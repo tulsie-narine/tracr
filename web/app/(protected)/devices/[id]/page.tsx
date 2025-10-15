@@ -19,6 +19,45 @@ import { fetchDeviceDetail } from '@/lib/api-client'
 import { formatDistanceToNow } from 'date-fns'
 import { validateDeviceId } from '@/lib/utils'
 
+function InvalidDeviceIdPage({ deviceId, router }: { deviceId: string; router: ReturnType<typeof useRouter> }) {
+  return (
+    <div className="flex min-h-screen flex-col">
+      <main className="flex-1 space-y-4 p-8 pt-6">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => router.push('/devices')}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Devices
+          </Button>
+        </div>
+        
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <AlertCircle className="h-12 w-12 text-red-500" />
+              <h3 className="text-lg font-semibold">Invalid Device ID Format</h3>
+              <p className="text-muted-foreground max-w-md">
+                Device IDs must be valid UUIDs. The provided ID &ldquo;{deviceId}&rdquo; is not in the correct format.
+              </p>
+              <div className="flex gap-2">
+                <Button onClick={() => router.push('/devices')}>
+                  Back to Device List
+                </Button>
+                <Button variant="outline" onClick={() => navigator.clipboard.writeText(deviceId)}>
+                  Copy Device ID
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  )
+}
+
 export default function DeviceDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -26,52 +65,13 @@ export default function DeviceDetailPage() {
   
   const [selectedTab, setSelectedTab] = useState('overview')
 
-  // Validate device ID format
-  if (!validateDeviceId(deviceId)) {
-    return (
-      <div className="flex min-h-screen flex-col">
-        <main className="flex-1 space-y-4 p-8 pt-6">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => router.push('/devices')}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Devices
-            </Button>
-          </div>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center gap-4 text-center">
-                <AlertCircle className="h-12 w-12 text-red-500" />
-                <h3 className="text-lg font-semibold">Invalid Device ID Format</h3>
-                <p className="text-muted-foreground max-w-md">
-                  Device IDs must be valid UUIDs. The provided ID "{deviceId}" is not in the correct format.
-                </p>
-                <div className="flex gap-2">
-                  <Button onClick={() => router.push('/devices')}>
-                    Back to Device List
-                  </Button>
-                  <Button variant="outline" onClick={() => navigator.clipboard.writeText(deviceId)}>
-                    Copy Device ID
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    )
-  }
-
+  // Always call hooks - move validation after hooks
   const { 
     data: device, 
     error, 
     isLoading
   } = useSWR(
-    deviceId ? ['device', deviceId] : null,
+    deviceId && validateDeviceId(deviceId) ? ['device', deviceId] : null,
     () => fetchDeviceDetail(deviceId),
     { refreshInterval: 60000 } // Refresh every 60 seconds
   )
@@ -82,6 +82,11 @@ export default function DeviceDetailPage() {
       router.push('/devices')
     }
   }, [error, router])
+
+  // Validate device ID format after hooks
+  if (!validateDeviceId(deviceId)) {
+    return <InvalidDeviceIdPage deviceId={deviceId} router={router} />
+  }
 
   if (isLoading) {
     return (

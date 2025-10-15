@@ -40,7 +40,7 @@ import {
   XCircle,
   AlertTriangle,
 } from 'lucide-react'
-import { formatDistanceToNow, format } from 'date-fns'
+import { safeFormatDistanceToNow, safeFormatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Command } from '@/types'
 
@@ -256,10 +256,10 @@ export default function DeviceCommands({ deviceId }: DeviceCommandsProps) {
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="font-medium">
-                          {formatDistanceToNow(new Date(command.created_at), { addSuffix: true })}
+                          {safeFormatDistanceToNow(command.created_at, { addSuffix: true })}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {format(new Date(command.created_at), 'PPpp')}
+                          {safeFormatDate(command.created_at, 'PPpp')}
                         </span>
                       </div>
                     </TableCell>
@@ -268,10 +268,10 @@ export default function DeviceCommands({ deviceId }: DeviceCommandsProps) {
                       {command.executed_at ? (
                         <div className="flex flex-col">
                           <span className="font-medium">
-                            {formatDistanceToNow(new Date(command.executed_at), { addSuffix: true })}
+                            {safeFormatDistanceToNow(command.executed_at, { addSuffix: true })}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(command.executed_at), 'PPpp')}
+                            {safeFormatDate(command.executed_at, 'PPpp')}
                           </span>
                         </div>
                       ) : (

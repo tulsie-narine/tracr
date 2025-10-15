@@ -44,7 +44,7 @@ export async function checkApiHealth(): Promise<boolean> {
     const isHealthy = response.ok
     apiHealthStatus = isHealthy ? 'healthy' : 'unhealthy'
     return isHealthy
-  } catch (error) {
+  } catch {
     apiHealthStatus = 'unhealthy'
     return false
   }

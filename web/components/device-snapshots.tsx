@@ -32,7 +32,6 @@ import {
   MemoryStick
 } from 'lucide-react'
 import { fetchDeviceSnapshots } from '@/lib/api-client'
-import { formatDistanceToNow, format } from 'date-fns'
 import { safeFormatDistanceToNow, safeFormatDate, isValidDate } from '@/lib/utils'
 import { formatBytes } from '@/lib/utils'
 
@@ -207,7 +206,7 @@ export default function DeviceSnapshots({ deviceId }: DeviceSnapshotsProps) {
                     </TableCell>
                     
                     <TableCell>
-                      {snapshot.cpu_percent !== undefined ? (
+                      {snapshot.cpu_percent !== undefined && snapshot.cpu_percent !== null ? (
                         <div className="flex items-center gap-2">
                           <Cpu className="h-4 w-4 text-muted-foreground" />
                           <span>{snapshot.cpu_percent.toFixed(1)}%</span>

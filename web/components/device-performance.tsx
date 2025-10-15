@@ -31,7 +31,6 @@ import {
   Activity
 } from 'lucide-react'
 import { fetchDeviceSnapshots } from '@/lib/api-client'
-import { format } from 'date-fns'
 import { formatBytes, safeFormatDate, isValidDate } from '@/lib/utils'
 
 interface DevicePerformanceProps {

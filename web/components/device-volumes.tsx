@@ -23,7 +23,7 @@ import {
   CheckCircle,
   Folder
 } from 'lucide-react'
-import { fetchDeviceSnapshots, fetchDeviceDetail, fetchSnapshotDetail } from '@/lib/api-client'
+import { fetchDeviceDetail, fetchSnapshotDetail } from '@/lib/api-client'
 import { formatBytes, getVolumeStatusColor } from '@/lib/utils'
 import { Volume } from '@/types'
 

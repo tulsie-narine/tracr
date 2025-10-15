@@ -1,19 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { checkApiHealth, getApiHealthStatus } from '@/lib/api-client'
+import { checkApiHealth } from '@/lib/api-client'
 import { config } from '@/lib/env'
 
 export default function ConnectionStatus() {
   const [isChecking, setIsChecking] = useState(true)
-  const [isConnected, setIsConnected] = useState(false)
+
   const [showBanner, setShowBanner] = useState(false)
 
   useEffect(() => {
     const checkConnection = async () => {
       setIsChecking(true)
       const healthy = await checkApiHealth()
-      setIsConnected(healthy)
       setIsChecking(false)
       
       // Show banner if API is not available and not using placeholder
@@ -76,7 +75,6 @@ export default function ConnectionStatus() {
               onClick={async () => {
                 setIsChecking(true)
                 const healthy = await checkApiHealth()
-                setIsConnected(healthy)
                 setIsChecking(false)
                 if (healthy) setShowBanner(false)
               }}

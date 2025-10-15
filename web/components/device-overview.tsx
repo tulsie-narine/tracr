@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { DeviceListItem } from '@/types'
-import { formatDistanceToNow, format } from 'date-fns'
+
 import { safeFormatDistanceToNow, safeFormatDate, isValidDate } from '@/lib/utils'
 import { 
   Monitor, 
@@ -111,7 +111,7 @@ export default function DeviceOverview({ device, isOnline }: DeviceOverviewProps
           {device.uptime_hours !== undefined && (
             <div>
               <p className="text-sm font-medium text-muted-foreground">Uptime</p>
-              <p className="text-lg">{Math.floor(device.uptime_hours / 24)}d {Math.floor(device.uptime_hours % 24)}h</p>
+              <p className="text-lg">{Math.floor((device.uptime_hours || 0) / 24)}d {Math.floor((device.uptime_hours || 0) % 24)}h</p>
             </div>
           )}
         </CardContent>
@@ -181,7 +181,7 @@ export default function DeviceOverview({ device, isOnline }: DeviceOverviewProps
             {device.latest_snapshot.cpu_percent !== undefined && (
               <div>
                 <p className="text-sm font-medium text-muted-foreground">CPU Usage</p>
-                <p className="text-lg">{device.latest_snapshot.cpu_percent.toFixed(1)}%</p>
+                <p className="text-lg">{device.latest_snapshot.cpu_percent?.toFixed(1) || '0.0'}%</p>
               </div>
             )}
 
@@ -215,12 +215,12 @@ export default function DeviceOverview({ device, isOnline }: DeviceOverviewProps
           
           <div>
             <p className="text-sm font-medium text-muted-foreground">Created At</p>
-            <p className="text-lg">{format(new Date(device.created_at), 'PPP')}</p>
+            <p className="text-lg">{safeFormatDate(device.created_at, 'PPP')}</p>
           </div>
 
           <div>
             <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
-            <p className="text-lg">{formatDistanceToNow(new Date(device.updated_at), { addSuffix: true })}</p>
+            <p className="text-lg">{safeFormatDistanceToNow(device.updated_at, { addSuffix: true })}</p>
           </div>
         </CardContent>
       </Card>

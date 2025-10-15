@@ -29,7 +29,7 @@ import {
   Calendar,
   HardDrive
 } from 'lucide-react'
-import { fetchDeviceSnapshots, fetchDeviceDetail, fetchSnapshotDetail } from '@/lib/api-client'
+import { fetchDeviceDetail, fetchSnapshotDetail } from '@/lib/api-client'
 import { formatDistanceToNow, format } from 'date-fns'
 import { formatBytes } from '@/lib/utils'
 import { Software } from '@/types'

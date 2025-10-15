@@ -117,7 +117,7 @@ export function safeFormatDate(
 
 export function safeFormatDistanceToNow(
   dateString: string | null | undefined, 
-  options?: any, 
+  options?: { addSuffix?: boolean; includeSeconds?: boolean }, 
   fallback: string = 'Unknown'
 ): string {
   if (!isValidDate(dateString)) {
