@@ -116,6 +116,11 @@ func loadFromFile(cfg *Config, path string) error {
 		return err
 	}
 
+	// Remove UTF-8 BOM if present (fixes Windows config file issues)
+	if len(data) >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF {
+		data = data[3:]
+	}
+
 	// Create a temporary struct to handle duration parsing
 	var temp struct {
 		APIEndpoint         string  `json:"api_endpoint"`

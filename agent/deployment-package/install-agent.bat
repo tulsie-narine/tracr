@@ -4,6 +4,22 @@ echo =================================
 echo.
 echo This script will install and configure the Tracr Agent for Railway API backend.
 echo.
+echo Installation Options:
+echo 1. Normal Installation (recommended)
+echo 2. Nuclear Reset Installation (if you're having persistent issues)
+echo.
+set /p choice="Choose option (1 or 2): "
+
+if "%choice%"=="2" (
+    echo.
+    echo Switching to Nuclear Reset Installation...
+    echo This will completely wipe all existing Tracr Agent data and start fresh.
+    call nuclear-reset-install.bat
+    exit /b 0
+)
+
+echo.
+echo Proceeding with Normal Installation...
 pause
 
 echo Step 1: Checking for existing installation...

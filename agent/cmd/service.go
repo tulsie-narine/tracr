@@ -24,12 +24,26 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
 
-	// Start the scheduler
+	// Start the scheduler with retry logic
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 	
-	cfg, err := config.Load()
+	// Try to load configuration with retries
+	var cfg *config.Config
+	var err error
+	maxRetries := 3
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		cfg, err = config.Load()
+		if err == nil {
+			break
+		}
+		logger.Error("Failed to load configuration", "error", err, "attempt", attempt)
+		if attempt < maxRetries {
+			time.Sleep(time.Duration(attempt) * time.Second)
+		}
+	}
+	
 	if err != nil {
-		logger.Error("Failed to load configuration", "error", err)
+		logger.Error("Failed to load configuration after retries", "error", err, "attempts", maxRetries)
 		changes <- svc.Status{State: svc.Stopped, Win32ExitCode: 1}
 		return
 	}
