@@ -74,11 +74,6 @@ export default function DevicesPage() {
     { refreshInterval: 60000 }
   )
 
-  // Debug logging
-  console.log('Devices page - data:', data)
-  console.log('Devices page - error:', error)
-  console.log('Devices page - isLoading:', isLoading)
-
   const handleRefresh = () => {
     mutate()
   }
